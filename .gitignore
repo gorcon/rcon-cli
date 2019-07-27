@@ -1,0 +1,6 @@
+.idea/
+rcon.yaml
+rcon-cli
+build.sh
+vendor/
+Gopkg.lock
