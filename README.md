@@ -1,5 +1,6 @@
 # rcon-cli
 [![Go Report Card](https://goreportcard.com/badge/github.com/gorcon/rcon-cli)](https://goreportcard.com/report/github.com/gorcon/rcon-cli)
+![GitHub All Releases](https://img.shields.io/github/downloads/gorcon/rcon-cli/total)
 
 CLI for executing queries on a remote server
 
@@ -41,9 +42,12 @@ Use ^C to terminate or type command :q in CLI.
 
 For more convenient use, the ability to create the rcon.yaml configuration file is provided. 
 You can save the address of the remote server and its password. If the configuration file exists, 
-then at startup the -a and -p flags can be omitted. 
+then at startup the -a and -p flags can be omitted. Example:
 
-File must be saved in yaml format. Example:
+    ./rcon -a address -c command
+    ./rcon -a address cli
+
+Default configuration file name is `rcon.yaml`. File must be saved in yaml format. Example:
 
 ```yaml
 default:
