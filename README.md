@@ -15,7 +15,7 @@ Open pull request if you have successfully used a package with another game with
 
 ## Installation
 
-Download the binary for your platform from the [releases](https://github.com/gorcon/rcon/releases)
+Download the binary for your platform from the [releases](https://github.com/gorcon/rcon-cli/releases)
 
 ## Usage
 
