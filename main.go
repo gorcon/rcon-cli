@@ -15,6 +15,10 @@ import (
 // DefaultConfigName sets the default config file name.
 const DefaultConfigName = "rcon.yaml"
 
+// DefaultConfigEnv is the name of the environment, which is taken
+// as default unless another value is passed.
+const DefaultConfigEnv = "default"
+
 // Config allows to take a remote server address and password from
 // the configuration file. This enables not to specify these flags when
 // running the CLI.
@@ -37,7 +41,7 @@ func main() {
 	app := cli.NewApp()
 	app.Usage = "CLI for executing queries on a remote server"
 	app.Description = description
-	app.Version = "0.1.0"
+	app.Version = "0.2.0"
 	app.Author = "Pavel Korotkiy (outdead)"
 	app.Copyright = "Copyright (c) 2019 Pavel Korotkiy"
 	app.Commands = []cli.Command{
@@ -52,6 +56,7 @@ func main() {
 				}
 
 				scanner := bufio.NewScanner(os.Stdin)
+				fmt.Printf("waiting commands for %s\n", address)
 				fmt.Print("> ")
 				for scanner.Scan() {
 					command := scanner.Text()
@@ -86,8 +91,9 @@ func main() {
 			Usage: "command to execute on remote server. Required flag to run in single mode",
 		},
 		cli.StringFlag{
-			Name:  "env, e",
-			Usage: "allows you to select remote server address and password from the environment in the configuration file",
+			Name: "env, e",
+			Usage: "allows to select remote server address and password from the environment " +
+				"\n                              in the configuration file",
 		},
 	}
 	app.Action = func(c *cli.Context) error {
@@ -143,8 +149,8 @@ func readYamlConfig(path string) (Config, error) {
 // a remote server. If the address and password flags were received, the
 // configuration file is ignored.
 func getCredentials(c *cli.Context) (address string, password string) {
-	address = c.String("a")
-	password = c.String("p")
+	address = c.GlobalString("a")
+	password = c.GlobalString("p")
 
 	if address != "" && password != "" {
 		return
@@ -164,12 +170,17 @@ func getCredentials(c *cli.Context) (address string, password string) {
 			return
 		}
 
+		e := c.GlobalString("e")
+		if e == "" {
+			e = DefaultConfigEnv
+		}
+
 		if address == "" {
-			address = cfg["default"].Address
+			address = cfg[e].Address
 		}
 
 		if password == "" {
-			password = cfg["default"].Password
+			password = cfg[e].Password
 		}
 	}
 

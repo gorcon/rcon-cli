@@ -30,8 +30,8 @@
   version = "2.2.2"
 
 [[constraint]]
-  branch = "master"
   name = "github.com/gorcon/rcon"
+  version = "1.0.0"
 
 [[constraint]]
   name = "github.com/urfave/cli"
