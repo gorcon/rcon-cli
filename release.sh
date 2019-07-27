@@ -4,7 +4,7 @@ VER="0.1.0"
 
 rm -fr release
 mkdir release
-print > release/rcon-$VER-md5.txt
+print > release/checksum.txt
 
 function make_release() {
     local arch="$1"
@@ -29,35 +29,13 @@ function make_release() {
     case $os in
         linux)
             tar -zcvf $release_name.tar.gz $release_name
-            md5sum $release_name.tar.gz >> rcon-$VER-md5.txt
+            md5sum $release_name.tar.gz >> checksum.txt
             ;;
         windows)
             zip -r $release_name.zip $release_name
-            md5sum $release_name.zip >> rcon-$VER-md5.txt
+            md5sum $release_name.zip >> checksum.txt
             ;;
     esac
-    rm -r $release_name
-    cd ../
-}
-
-function source_code() {
-    local release_name=rcon-${VER}-src
-    local dir=release/$release_name
-
-    mkdir -p $dir
-
-    cp -r vendor $dir
-    cp .gitignore $dir
-    cp Gopkg.lock $dir
-    cp Gopkg.toml $dir
-    cp LICENSE $dir
-    cp main.go $dir
-    cp README.md $dir
-    cp release.sh $dir
-
-    cd release/
-    tar -zcvf $release_name.tar.gz $release_name
-    zip -r $release_name.zip $release_name
     rm -r $release_name
     cd ../
 }
@@ -66,5 +44,3 @@ make_release 386 linux rcon-$VER-i386_linux
 make_release amd64 linux rcon-$VER-amd64_linux
 make_release 386 windows rcon-$VER-win32 .exe
 make_release amd64 windows rcon-$VER-win64 .exe
-
-source_code
