@@ -1,0 +1,4 @@
+default:
+  address: ""
+  password: ""
+  log: "rcon-default.log"

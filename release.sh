@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VER="0.2.0"
+VER="0.3.0"
 
 rm -fr release
 mkdir release
@@ -20,10 +20,12 @@ function make_release() {
 
     mkdir -p $dir
     env GOARCH=$arch GOOS=$os go build -ldflags "-s -w" -o $dir/rcon$ext
-    upx-ucl --best $dir/rcon$ext -o $dir/rcon-upx$ext
+    #upx-ucl --best $dir/rcon$ext -o $dir/rcon-upx$ext
 
     cp LICENSE $dir
     cp README.md $dir
+    cp changelog.md $dir
+    cp rcon.yaml $dir
 
     cd release/
     case $os in

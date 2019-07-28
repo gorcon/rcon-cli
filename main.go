@@ -2,10 +2,12 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/go-yaml/yaml"
 	"github.com/gorcon/rcon"
@@ -18,6 +20,19 @@ const DefaultConfigName = "rcon.yaml"
 // DefaultConfigEnv is the name of the environment, which is taken
 // as default unless another value is passed.
 const DefaultConfigEnv = "default"
+
+// CommandQuit is the command for exit from interactive mode.
+const CommandQuit = ":q"
+
+// LogRecordTimeLayout is layout for convert time.Now to String
+const LogRecordTimeLayout = "2006-01-02 15:04:05"
+
+// LogRecordFormat is format to log line record.
+const LogRecordFormat = "[%s] %s: %s\n%s\n\n"
+
+// LogFileName is the name of the file to which requests will be logged.
+// If not specified, no logging will be performed.
+var LogFileName string
 
 // Config allows to take a remote server address and password from
 // the configuration file. This enables not to specify these flags when
@@ -32,6 +47,7 @@ const DefaultConfigEnv = "default"
 type Config map[string]struct {
 	Address  string `json:"address" yaml:"address"`
 	Password string `json:"password" yaml:"password"`
+	Log      string `json:"log" yaml:"log"`
 }
 
 func main() {
@@ -41,93 +57,110 @@ func main() {
 	app := cli.NewApp()
 	app.Usage = "CLI for executing queries on a remote server"
 	app.Description = description
-	app.Version = "0.2.0"
-	app.Author = "Pavel Korotkiy (outdead)"
-	app.Copyright = "Copyright (c) 2019 Pavel Korotkiy"
-	app.Commands = []cli.Command{
-		{
-			Name:  "cli",
-			Usage: "Run CLI for commands in the form of successive lines of text from the input stream",
-			Action: func(c *cli.Context) error {
-				address, password := getCredentials(c)
-				if address == "" || password == "" {
-					cli.ShowAppHelpAndExit(c, 1)
-					return nil
-				}
-
-				scanner := bufio.NewScanner(os.Stdin)
-				fmt.Printf("waiting commands for %s\n", address)
-				fmt.Print("> ")
-				for scanner.Scan() {
-					command := scanner.Text()
-					if command != "" {
-						if command == ":q" {
-							return nil
-						}
-
-						execute(address, password, command)
-					}
-
-					fmt.Print("> ")
-				}
-
-				return nil
-			},
-		},
-	}
+	app.Version = "0.3.0"
+	app.Copyright = "Copyright (c) 2019 Pavel Korotkiy (outdead)"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name: "address, a",
+			Name: "a, address",
 			Usage: "set host and port to remote rcon server. Example 127.0.0.1:16260" +
 				"\n                              can be set in the config file rcon.yaml",
 		},
 		cli.StringFlag{
-			Name: "password, p",
+			Name: "p, password",
 			Usage: "set password to remote rcon server" +
 				"\n                               can be set in the config file rcon.yaml",
 		},
 		cli.StringFlag{
-			Name:  "command, c",
+			Name:  "c, command",
 			Usage: "command to execute on remote server. Required flag to run in single mode",
 		},
 		cli.StringFlag{
-			Name: "env, e",
-			Usage: "allows to select remote server address and password from the environment " +
+			Name: "e, env",
+			Usage: "allows to select remote server address and password from the environment" +
 				"\n                              in the configuration file",
+		},
+		cli.StringFlag{
+			Name: "cfg",
+			Usage: "allows to specify the path and name of the configuration file. The default" +
+				"\n                value is rcon.yaml. If not defined config is taken from the running directory.",
 		},
 	}
 	app.Action = func(c *cli.Context) error {
-		address, password := getCredentials(c)
-		command := c.String("command")
-		if address == "" || password == "" || command == "" {
-			cli.ShowAppHelpAndExit(c, 1)
-			return nil
+		address, password, err := getCredentials(c)
+		if err != nil {
+			return err
 		}
 
-		execute(address, password, command)
-		return nil
+		if address == "" || password == "" {
+			if address == "" {
+				return errors.New("address is not set: to set address add -a host:port")
+			}
+
+			if password == "" {
+				return errors.New("password is not set: to set password add -p password")
+			}
+		}
+
+		command := c.String("command")
+		if command == "" {
+			return interactive(address, password)
+		}
+
+		return execute(address, password, command)
 	}
 
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
-// execute sends command to execute to the remote server.
-func execute(address string, password string, command string) {
+// execute sends command to execute to the remote server and prints the response.
+func execute(address string, password string, command string) error {
 	console, err := rcon.Dial(address, password)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 	defer console.Close()
 
 	result, err := console.Execute(command)
-	if err != nil {
-		fmt.Println(err)
-	}
-
 	if result != "" {
 		fmt.Println(result)
 	}
+
+	if err := addLog(LogFileName, address, command, result); err != nil {
+		err = fmt.Errorf("log error: %s", err)
+		fmt.Println(err)
+	}
+
+	return err
+}
+
+// interactive reads stdin, parses commands, executes them on remote server
+// and prints the responses.
+func interactive(address string, password string) error {
+	if err := checkCredentials(address, password); err != nil {
+		return err
+	}
+
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Printf("waiting commands for %s\n> ", address)
+	for scanner.Scan() {
+		command := scanner.Text()
+		if command != "" {
+			if command == CommandQuit {
+				return nil
+			}
+
+			if err := execute(address, password, command); err != nil {
+				return err
+			}
+		}
+
+		fmt.Print("> ")
+	}
+
+	return nil
 }
 
 // readYamlConfig reads config data from yaml file.
@@ -148,26 +181,35 @@ func readYamlConfig(path string) (Config, error) {
 // getCredentials parses os args or config file for details of connecting to
 // a remote server. If the address and password flags were received, the
 // configuration file is ignored.
-func getCredentials(c *cli.Context) (address string, password string) {
+func getCredentials(c *cli.Context) (address string, password string, err error) {
 	address = c.GlobalString("a")
 	password = c.GlobalString("p")
 
 	if address != "" && password != "" {
-		return
+		return address, password, nil
 	}
 
-	home, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	path := home + "/" + DefaultConfigName
+	path := c.GlobalString("cfg")
+	if path == "" {
+		var home string
+		home, err = filepath.Abs(filepath.Dir(os.Args[0]))
+		if err != nil {
+			return address, password, err
+		}
+		path = home + "/" + DefaultConfigName
 
-	if _, err := os.Stat(path); err == nil {
+		if _, err2 := os.Stat(path); err2 != nil {
+			// TODO: Think about creation of the config file.
+			return address, password, err
+		}
+	}
+
+	// Read the config file if file exists.
+	_, err = os.Stat(path)
+	if err == nil {
 		cfg, err := readYamlConfig(path)
 		if err != nil {
-			fmt.Println(err)
-			return
+			return address, password, err
 		}
 
 		e := c.GlobalString("e")
@@ -175,14 +217,58 @@ func getCredentials(c *cli.Context) (address string, password string) {
 			e = DefaultConfigEnv
 		}
 
+		// Get address from environment in config if -a flag is not defined.
 		if address == "" {
 			address = cfg[e].Address
 		}
 
+		// Get password from environment in config if -p flag is not defined.
 		if password == "" {
 			password = cfg[e].Password
 		}
+
+		LogFileName = cfg[e].Log
 	}
 
 	return
+}
+
+// checkCredentials sends auth request for remote server. Returns en error if
+// address or password is incorrect.
+func checkCredentials(address string, password string) error {
+	console, err := rcon.Dial(address, password)
+	if err != nil {
+		return err
+	}
+
+	return console.Close()
+}
+
+// addLog saves request and response to log file.
+func addLog(logName string, address string, request string, response string) error {
+	if logName == "" {
+		return nil
+	}
+
+	var file *os.File
+	if _, err := os.Stat(logName); os.IsNotExist(err) {
+		file, err = os.Create(logName)
+		if err != nil {
+			return err
+		}
+	} else {
+		file, err = os.OpenFile(logName, os.O_APPEND|os.O_WRONLY, 0777)
+		if err != nil {
+			return err
+		}
+	}
+	defer file.Close()
+
+	now := time.Now()
+	line := fmt.Sprintf(LogRecordFormat, now.Format(LogRecordTimeLayout), address, request, response)
+	if _, err := file.WriteString(line); err != nil {
+		return err
+	}
+
+	return nil
 }

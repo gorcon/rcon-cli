@@ -1,6 +1,6 @@
 # rcon-cli
 [![Go Report Card](https://goreportcard.com/badge/github.com/gorcon/rcon-cli)](https://goreportcard.com/report/github.com/gorcon/rcon-cli)
-![GitHub All Releases](https://img.shields.io/github/downloads/gorcon/rcon-cli/total)
+[![GitHub All Releases](https://img.shields.io/github/downloads/gorcon/rcon-cli/total)](https://github.com/gorcon/rcon-cli/releases)
 
 CLI for executing queries on a remote server
 
@@ -15,7 +15,9 @@ Open pull request if you have successfully used a package with another game with
 
 ## Installation
 
-Download the binary for your platform from the [releases](https://github.com/gorcon/rcon-cli/releases)
+Download the binary for your platform from the [latest releases](https://github.com/gorcon/rcon-cli/releases/latest)
+
+See [Changelog](changelog.md) for release details
 
 ## Usage
 
@@ -24,7 +26,6 @@ USAGE:
    rcon-cli [global options] command [command options] [arguments...]
 
 COMMANDS:
-     cli      Run CLI for commands in the form of successive lines of text from the input stream
      help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
@@ -33,8 +34,10 @@ GLOBAL OPTIONS:
    --password value, -p value  set password to remote rcon server
                                can be set in the config file rcon.yaml
    --command value, -c value  command to execute on remote server. Required flag to run in single mode
-   --env value, -e value      allows to select remote server address and password from the environment 
+   --env value, -e value      allows to select remote server address and password from the environment
                               in the configuration file
+   --cfg value  allows to specify the path and name of the configuration file. The default
+                value is rcon.yaml. If not defined config is taken from the running directory.
    --help, -h     show help
    --version, -v  print the version
 ```
@@ -47,16 +50,15 @@ Server address, password and command to server must be specified in flags at sta
 
     ./rcon -a 127.0.0.1:16260 -p mypassword -c help
     
-If flags are passed into the CLI, then the flags are sent as a single command. 
-The response is displayed, and the CLI will exit.
+If arguments are passed they will sent as a single command. The response will displayed, and the CLI will exit.
 
-### Input stream mode
+### Interactive input stream mode
 
-To run CLI in input stream mode add command cli. Example:
+To run CLI in interactive mode run `rcon` without `-c` argument. Example:
 
-    ./rcon -a 127.0.0.1:16260 -p mypassword cli
+    ./rcon -a 127.0.0.1:16260 -p mypassword
     
-Use `^C` to terminate or type command `:q` in CLI to exit.    
+Use `^C` to terminate or type command `:q` to exit.    
 
 ## Configuration file
 
@@ -66,19 +68,25 @@ and in it the default block is filled, then at startup the -a and -p flags can b
 
     ./rcon -a 127.0.0.1:16260 -c players
     ./rcon -c status
-    ./rcon -p mypassword cli
-    ./rcon cli
+    ./rcon -p mypassword
+    ./rcon 
 
 Default configuration file name is `rcon.yaml`. File must be saved in yaml format. It is also possible 
-to set the environment name and connection parameters for each server, for example:
+to set the environment name and connection parameters for each server. You can enable logging requests 
+and responses. To do this, you need to define the log variable in the environment blocks. You can do 
+this for each server separately and create different log files for them. If the path to the log file is 
+not specified, then logging will not be conducted. You cannot control this in arguments, it is available 
+only from the configuration file.
 
 ```yaml
 default:
   address: "127.0.0.1:16260"
   password: "password"
+  log: "rcon-default.log"
 zomboid:
   address: "127.0.0.1:16260"
   password: "password"
+  log: "rcon-zomboid.log"
 rust:
   address: "127.0.0.1:28003"
   password: "password"  
@@ -87,4 +95,8 @@ rust:
 You can choose the environment at the start:
 
     ./rcon -e rust -c status
-    ./rcon -e zomboid cli
+    ./rcon -e zomboid
+    
+And set custom config file     
+
+    ./rcon --cfg /path/to/config/file.yaml

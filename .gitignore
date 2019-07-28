@@ -1,8 +1,9 @@
 .idea/
-rcon.yaml
+rcon-local.yaml
 rcon-cli
 rcon-cli.exe
 build.sh
 vendor/
 Gopkg.lock
 release/
+*.log
