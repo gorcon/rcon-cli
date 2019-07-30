@@ -57,7 +57,7 @@ func main() {
 	app := cli.NewApp()
 	app.Usage = "CLI for executing queries on a remote server"
 	app.Description = description
-	app.Version = "0.3.0"
+	app.Version = "0.3.1"
 	app.Copyright = "Copyright (c) 2019 Pavel Korotkiy (outdead)"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -80,15 +80,24 @@ func main() {
 				"\n                              in the configuration file",
 		},
 		cli.StringFlag{
+			Name:  "l, log",
+			Usage: "path and name of the log file. if not specified, it is taken from the config.",
+		},
+		cli.StringFlag{
 			Name: "cfg",
 			Usage: "allows to specify the path and name of the configuration file. The default" +
-				"\n                value is rcon.yaml. If not defined config is taken from the running directory.",
+				"\n                value is rcon.yaml.",
 		},
 	}
 	app.Action = func(c *cli.Context) error {
 		address, password, err := getCredentials(c)
 		if err != nil {
 			return err
+		}
+
+		command := c.String("command")
+		if command == "" {
+			return interactive(address, password)
 		}
 
 		if address == "" || password == "" {
@@ -99,11 +108,6 @@ func main() {
 			if password == "" {
 				return errors.New("password is not set: to set password add -p password")
 			}
-		}
-
-		command := c.String("command")
-		if command == "" {
-			return interactive(address, password)
 		}
 
 		return execute(address, password, command)
@@ -139,6 +143,16 @@ func execute(address string, password string, command string) error {
 // interactive reads stdin, parses commands, executes them on remote server
 // and prints the responses.
 func interactive(address string, password string) error {
+	if address == "" {
+		fmt.Print("enter host and port from remote server: ")
+		fmt.Scanln(&address)
+	}
+
+	if password == "" {
+		fmt.Print("enter the password: ")
+		fmt.Scanln(&password)
+	}
+
 	if err := checkCredentials(address, password); err != nil {
 		return err
 	}
@@ -184,6 +198,7 @@ func readYamlConfig(path string) (Config, error) {
 func getCredentials(c *cli.Context) (address string, password string, err error) {
 	address = c.GlobalString("a")
 	password = c.GlobalString("p")
+	LogFileName = c.GlobalString("l")
 
 	if address != "" && password != "" {
 		return address, password, nil
@@ -227,7 +242,9 @@ func getCredentials(c *cli.Context) (address string, password string, err error)
 			password = cfg[e].Password
 		}
 
-		LogFileName = cfg[e].Log
+		if LogFileName == "" {
+			LogFileName = cfg[e].Log
+		}
 	}
 
 	return

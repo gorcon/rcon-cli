@@ -1,4 +1,4 @@
 default:
-  address: ""
+  address: "" # host:port, for example 107.0.0.1:16260
   password: ""
   log: "rcon-default.log"

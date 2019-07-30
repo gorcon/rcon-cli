@@ -23,21 +23,22 @@ See [Changelog](changelog.md) for release details
 
 ```text
 USAGE:
-   rcon-cli [global options] command [command options] [arguments...]
+   rcon [global options] command [command options] [arguments...]
 
 COMMANDS:
      help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --address value, -a value  set host and port to remote rcon server. Example 127.0.0.1:16260
+   -a value, --address value  set host and port to remote rcon server. Example 127.0.0.1:16260
                               can be set in the config file rcon.yaml
-   --password value, -p value  set password to remote rcon server
+   -p value, --password value  set password to remote rcon server
                                can be set in the config file rcon.yaml
-   --command value, -c value  command to execute on remote server. Required flag to run in single mode
-   --env value, -e value      allows to select remote server address and password from the environment
+   -c value, --command value  command to execute on remote server. Required flag to run in single mode
+   -e value, --env value      allows to select remote server address and password from the environment
                               in the configuration file
-   --cfg value  allows to specify the path and name of the configuration file. The default
-                value is rcon.yaml. If not defined config is taken from the running directory.
+   -l value, --log value  path and name of the log file. if not specified, it is taken from the config.
+   --cfg value            allows to specify the path and name of the configuration file. The default
+                value is rcon.yaml.
    --help, -h     show help
    --version, -v  print the version
 ```
@@ -63,7 +64,7 @@ Use `^C` to terminate or type command `:q` to exit.
 ## Configuration file
 
 For more convenient use, the ability to create the rcon.yaml configuration file is provided. 
-You can save the address of the remote server and its password. If the configuration file exists, 
+You can save the host and port of the remote server and its password. If the configuration file exists, 
 and in it the default block is filled, then at startup the -a and -p flags can be omitted. Examples:
 
     ./rcon -a 127.0.0.1:16260 -c players
@@ -75,8 +76,7 @@ Default configuration file name is `rcon.yaml`. File must be saved in yaml forma
 to set the environment name and connection parameters for each server. You can enable logging requests 
 and responses. To do this, you need to define the log variable in the environment blocks. You can do 
 this for each server separately and create different log files for them. If the path to the log file is 
-not specified, then logging will not be conducted. You cannot control this in arguments, it is available 
-only from the configuration file.
+not specified, then logging will not be conducted. 
 
 ```yaml
 default:
@@ -100,3 +100,16 @@ You can choose the environment at the start:
 And set custom config file     
 
     ./rcon --cfg /path/to/config/file.yaml
+    
+You can use `-l` argument to specify path to log file.
+
+     ./rcon -l /path/to/file.log
+
+## Contribute
+
+If you think that you have found a bug, create an issue and publish the minimum amount of code triggering the bug so 
+it can be reproduced.
+
+## License
+
+MIT License, see [LICENSE](LICENSE)

@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 
 
+## [v0.4.0] - Unreleased
+### Added
+- Added argument `-l`, `--log` to pass custom log path/name. Argument has higher priority 
+than entry in configuration file.
+- Added interactive opportunity to enter server address and password.
+
+
 ## [v0.3.0] - 2019-07-28
 ### Added
 - Print error messages for missed address and password arguments.
