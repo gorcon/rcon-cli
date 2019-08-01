@@ -107,8 +107,8 @@ You can use `-l` argument to specify path to log file.
 
 ## Contribute
 
-If you think that you have found a bug, create an issue and publish the minimum amount of code triggering the bug so 
-it can be reproduced.
+If you think that you have found a bug, create an issue and indicate your operating system, platform and the game on 
+which the error was reproduced. Also describe what you were doing so that the error could be reproduced.
 
 ## License
 
