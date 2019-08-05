@@ -1,15 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+**ATTN**: This project uses [semantic versioning](http://semver.org/).
 
+## [Unreleased]
 
 ## [v0.4.0] - 2019-08-05
 ### Added
 - Added argument `-l`, `--log` to pass custom log path/name. Argument has higher priority 
 than entry in configuration file.
 - Added interactive opportunity to enter server address and password.
-
 
 ## [v0.3.0] - 2019-07-28
 ### Added
@@ -23,10 +23,18 @@ than entry in configuration file.
 - Remove rcon-upx fron release.
 - Remove 'cli' command to run in interactive mode. For use interactive mode run `rcon` without `-c` argument.
 
-
 ## [v0.2.0] - 2019-07-27
 ### Added
 - Added environments to config.
 
 ### Fixed
 - Fix global options in interactive mode.
+
+## 0.1.0 - 2013-07-22
+### Added
+- Initial implementation.
+
+[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.4.0...HEAD
+[v0.4.0]: https://github.com/gorcon/rcon-cli/compare/v0.3.0...v0.4.0
+[v0.3.0]: https://github.com/gorcon/rcon-cli/compare/v0.2.0...v0.3.0
+[v0.2.0]: https://github.com/gorcon/rcon-cli/compare/v0.1.0...v0.2.0
