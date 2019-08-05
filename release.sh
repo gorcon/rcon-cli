@@ -24,7 +24,7 @@ function make_release() {
 
     cp LICENSE $dir
     cp README.md $dir
-    cp changelog.md $dir
+    cp CHANGELOG.md $dir
     cp rcon.yaml $dir
 
     cd release/

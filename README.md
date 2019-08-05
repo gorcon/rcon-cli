@@ -19,7 +19,7 @@ Open pull request if you have successfully used a package with another game with
 
 Download the binary for your platform from the [latest releases](https://github.com/gorcon/rcon-cli/releases/latest)
 
-See [Changelog](changelog.md) for release details
+See [Changelog](CHANGELOG.md) for release details
 
 ## Usage
 
