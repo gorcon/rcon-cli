@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -21,7 +22,10 @@ const DefaultConfigName = "rcon.yaml"
 // as default unless another value is passed.
 const DefaultConfigEnv = "default"
 
-// CommandQuit is the command for exit from interactive mode.
+// DefaultLogName sets the default log file name.
+const DefaultLogName = "rcon-default.log"
+
+// CommandQuit is the command for exit from Interactive mode.
 const CommandQuit = ":q"
 
 // LogRecordTimeLayout is layout for convert time.Now to String
@@ -51,13 +55,21 @@ type Config map[string]struct {
 }
 
 func main() {
-	var description = "Can be run in two modes - in the mode of a single query"
-	description += "\n   and in the mode of reading the input stream"
+	app := NewApp(os.Stdin, os.Stdout)
 
+	if err := app.Run(os.Args); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+// NewApp creates a new cli Application
+func NewApp(r io.Reader, w io.Writer) *cli.App {
 	app := cli.NewApp()
 	app.Usage = "CLI for executing queries on a remote server"
-	app.Description = description
-	app.Version = "0.3.1"
+	app.Description = "Can be run in two modes - in the mode of a single query" +
+		"\n   and in the mode of reading the input stream"
+	app.Version = "0.3.2"
 	app.Copyright = "Copyright (c) 2019 Pavel Korotkiy (outdead)"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -72,7 +84,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "c, command",
-			Usage: "command to execute on remote server. Required flag to run in single mode",
+			Usage: "command to Execute on remote server. Required flag to run in single mode",
 		},
 		cli.StringFlag{
 			Name: "e, env",
@@ -90,14 +102,14 @@ func main() {
 		},
 	}
 	app.Action = func(c *cli.Context) error {
-		address, password, err := getCredentials(c)
+		address, password, err := GetCredentials(c)
 		if err != nil {
 			return err
 		}
 
 		command := c.String("command")
 		if command == "" {
-			return interactive(address, password)
+			return Interactive(r, os.Stdout, address, password)
 		}
 
 		if address == "" || password == "" {
@@ -110,17 +122,18 @@ func main() {
 			}
 		}
 
-		return execute(address, password, command)
+		return Execute(w, address, password, command)
 	}
 
-	if err := app.Run(os.Args); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	return app
 }
 
-// execute sends command to execute to the remote server and prints the response.
-func execute(address string, password string, command string) error {
+// Execute sends command to Execute to the remote server and prints the response.
+func Execute(w io.Writer, address string, password string, command string) error {
+	if command == "" {
+		return errors.New("command is not set")
+	}
+
 	console, err := rcon.Dial(address, password)
 	if err != nil {
 		return err
@@ -129,73 +142,74 @@ func execute(address string, password string, command string) error {
 
 	result, err := console.Execute(command)
 	if result != "" {
-		fmt.Println(result)
+		fmt.Fprintln(w, result)
+	}
+	if err != nil {
+		return err
 	}
 
-	if err := addLog(LogFileName, address, command, result); err != nil {
+	if err := AddLog(LogFileName, address, command, result); err != nil {
 		err = fmt.Errorf("log error: %s", err)
-		fmt.Println(err)
 	}
 
 	return err
 }
 
-// interactive reads stdin, parses commands, executes them on remote server
+// Interactive reads stdin, parses commands, executes them on remote server
 // and prints the responses.
-func interactive(address string, password string) error {
+func Interactive(r io.Reader, w io.Writer, address string, password string) error {
 	if address == "" {
-		fmt.Print("enter host and port from remote server: ")
-		fmt.Scanln(&address)
+		fmt.Fprint(w, "enter host and port from remote server: ")
+		fmt.Fscanln(r, &address)
 	}
 
 	if password == "" {
-		fmt.Print("enter the password: ")
-		fmt.Scanln(&password)
+		fmt.Fprint(w, "enter the password: ")
+		fmt.Fscanln(r, &password)
 	}
 
-	if err := checkCredentials(address, password); err != nil {
+	if err := CheckCredentials(address, password); err != nil {
 		return err
 	}
 
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Printf("waiting commands for %s\n> ", address)
+	scanner := bufio.NewScanner(r)
+	fmt.Fprintf(w, "waiting commands for %s\n> ", address)
 	for scanner.Scan() {
 		command := scanner.Text()
 		if command != "" {
 			if command == CommandQuit {
-				return nil
+				break
 			}
 
-			if err := execute(address, password, command); err != nil {
+			if err := Execute(w, address, password, command); err != nil {
 				return err
 			}
 		}
 
-		fmt.Print("> ")
+		fmt.Fprint(w, "> ")
 	}
 
 	return nil
 }
 
-// readYamlConfig reads config data from yaml file.
-func readYamlConfig(path string) (Config, error) {
+// ReadYamlConfig reads config data from yaml file.
+func ReadYamlConfig(path string) (cfg Config, err error) {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return cfg, err
 	}
 
-	var cfg Config
 	if err = yaml.Unmarshal(file, &cfg); err != nil {
-		return nil, err
+		return cfg, err
 	}
 
 	return cfg, nil
 }
 
-// getCredentials parses os args or config file for details of connecting to
+// GetCredentials parses os args or config file for details of connecting to
 // a remote server. If the address and password flags were received, the
 // configuration file is ignored.
-func getCredentials(c *cli.Context) (address string, password string, err error) {
+func GetCredentials(c *cli.Context) (address string, password string, err error) {
 	address = c.GlobalString("a")
 	password = c.GlobalString("p")
 	LogFileName = c.GlobalString("l")
@@ -214,15 +228,14 @@ func getCredentials(c *cli.Context) (address string, password string, err error)
 		path = home + "/" + DefaultConfigName
 
 		if _, err2 := os.Stat(path); err2 != nil {
-			// TODO: Think about creation of the config file.
-			return address, password, err
+			return address, password, err2
 		}
 	}
 
 	// Read the config file if file exists.
 	_, err = os.Stat(path)
 	if err == nil {
-		cfg, err := readYamlConfig(path)
+		cfg, err := ReadYamlConfig(path)
 		if err != nil {
 			return address, password, err
 		}
@@ -250,9 +263,9 @@ func getCredentials(c *cli.Context) (address string, password string, err error)
 	return
 }
 
-// checkCredentials sends auth request for remote server. Returns en error if
+// CheckCredentials sends auth request for remote server. Returns en error if
 // address or password is incorrect.
-func checkCredentials(address string, password string) error {
+func CheckCredentials(address string, password string) error {
 	console, err := rcon.Dial(address, password)
 	if err != nil {
 		return err
@@ -261,23 +274,16 @@ func checkCredentials(address string, password string) error {
 	return console.Close()
 }
 
-// addLog saves request and response to log file.
-func addLog(logName string, address string, request string, response string) error {
+// AddLog saves request and response to log file.
+func AddLog(logName string, address string, request string, response string) error {
+	// Disable logging if log file name is empty.
 	if logName == "" {
 		return nil
 	}
 
-	var file *os.File
-	if _, err := os.Stat(logName); os.IsNotExist(err) {
-		file, err = os.Create(logName)
-		if err != nil {
-			return err
-		}
-	} else {
-		file, err = os.OpenFile(logName, os.O_APPEND|os.O_WRONLY, 0777)
-		if err != nil {
-			return err
-		}
+	file, err := GetLogFile(logName)
+	if err != nil {
+		return err
 	}
 	defer file.Close()
 
@@ -288,4 +294,26 @@ func addLog(logName string, address string, request string, response string) err
 	}
 
 	return nil
+}
+
+// GetLogFile opens file for append strings. Creates file if file not exist.
+func GetLogFile(logName string) (*os.File, error) {
+	if logName == "" {
+		return nil, errors.New("empty file name")
+	}
+
+	var file *os.File
+	if _, err := os.Stat(logName); os.IsNotExist(err) {
+		file, err = os.Create(logName)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		file, err = os.OpenFile(logName, os.O_APPEND|os.O_WRONLY, 0777)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return file, nil
 }

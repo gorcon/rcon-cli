@@ -1,5 +1,7 @@
 # rcon-cli
 [![Go Report Card](https://goreportcard.com/badge/github.com/gorcon/rcon-cli)](https://goreportcard.com/report/github.com/gorcon/rcon-cli)
+[![Build Status](https://travis-ci.org/gorcon/rcon-cli.svg?branch=master)](https://travis-ci.org/gorcon/rcon-cli)
+[![Coverage](https://gocover.io/_badge/github.com/gorcon/rcon-cli)](https://gocover.io/github.com/gorcon/rcon-cli)
 [![GitHub All Releases](https://img.shields.io/github/downloads/gorcon/rcon-cli/total)](https://github.com/gorcon/rcon-cli/releases)
 
 CLI for executing queries on a remote server

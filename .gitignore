@@ -7,3 +7,4 @@ vendor/
 Gopkg.lock
 release/
 *.log
+rcon-temp.yaml

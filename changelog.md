@@ -1,8 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-
-## [v0.4.0] - Unreleased
+## Unreleased
 ### Added
 - Added argument `-l`, `--log` to pass custom log path/name. Argument has higher priority 
 than entry in configuration file.
