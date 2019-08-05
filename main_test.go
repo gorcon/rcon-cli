@@ -247,6 +247,7 @@ func TestNewApp(t *testing.T) {
 	func() {
 		var configFileName = "rcon-temp.yaml"
 		err := CreateConfigFile(configFileName, server.Addr(), MockPassword)
+		assert.Nil(t, err)
 		defer func() {
 			err := os.Remove(configFileName)
 			assert.Nil(t, err)

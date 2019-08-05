@@ -69,7 +69,7 @@ func NewApp(r io.Reader, w io.Writer) *cli.App {
 	app.Usage = "CLI for executing queries on a remote server"
 	app.Description = "Can be run in two modes - in the mode of a single query" +
 		"\n   and in the mode of reading the input stream"
-	app.Version = "0.3.2"
+	app.Version = "0.4.0"
 	app.Copyright = "Copyright (c) 2019 Pavel Korotkiy (outdead)"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -149,10 +149,10 @@ func Execute(w io.Writer, address string, password string, command string) error
 	}
 
 	if err := AddLog(LogFileName, address, command, result); err != nil {
-		err = fmt.Errorf("log error: %s", err)
+		return fmt.Errorf("log error: %s", err)
 	}
 
-	return err
+	return nil
 }
 
 // Interactive reads stdin, parses commands, executes them on remote server
