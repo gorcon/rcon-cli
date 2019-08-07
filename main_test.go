@@ -22,7 +22,7 @@ func newConfig() *Config {
 func TestReadYamlConfig(t *testing.T) {
 	func() {
 		cfg, err := ReadYamlConfig("rcon.yaml")
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, newConfig(), &cfg)
 	}()
 
@@ -45,25 +45,55 @@ func TestAddLog(t *testing.T) {
 
 	defer func() {
 		err := os.Remove(logName)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}()
 
 	// Test skip log. No logs is available.
 	func() {
 		err := AddLog("", address, command, result)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}()
 
 	// Test create file log.
 	func() {
 		err := AddLog(logName, address, command, result)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}()
 
 	// Test append to log file.
 	func() {
 		err := AddLog(logName, address, command, result)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
+	}()
+}
+
+func TestGetLogFile(t *testing.T) {
+	logName := "tmpfile.log"
+
+	defer func() {
+		err := os.Remove(logName)
+		assert.NoError(t, err)
+	}()
+
+	// Test empty log file name.
+	func() {
+		file, err := GetLogFile("")
+		assert.Nil(t, file)
+		assert.EqualError(t, err, "empty file name")
+	}()
+
+	// Positive test create new lo file.
+	func() {
+		file, err := GetLogFile(logName)
+		assert.NotNil(t, file)
+		assert.NoError(t, err)
+	}()
+
+	// Positive test get exist log file.
+	func() {
+		file, err := GetLogFile(logName)
+		assert.NotNil(t, file)
+		assert.NoError(t, err)
 	}()
 }
 
@@ -150,7 +180,7 @@ func TestExecute(t *testing.T) {
 		LogFileName = "tmpfile.log"
 		defer func() {
 			err := os.Remove(LogFileName)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			LogFileName = ""
 		}()
 
@@ -247,10 +277,10 @@ func TestNewApp(t *testing.T) {
 	func() {
 		var configFileName = "rcon-temp.yaml"
 		err := CreateConfigFile(configFileName, server.Addr(), MockPassword)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		defer func() {
 			err := os.Remove(configFileName)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}()
 
 		r := &bytes.Buffer{}
@@ -265,7 +295,7 @@ func TestNewApp(t *testing.T) {
 		assert.NoError(t, err)
 	}()
 
-	// Test create default config file. Log is not used.
+	// Test default config file not exist. Log is not used.
 	func() {
 		r := &bytes.Buffer{}
 		w := &bytes.Buffer{}
@@ -279,6 +309,28 @@ func TestNewApp(t *testing.T) {
 		if !os.IsNotExist(err) {
 			t.Errorf("unexpected error: %v", err)
 		}
+	}()
+
+	// Test default config file is incorrect. Log is not used.
+	func() {
+		var configFileName = "rcon-temp.yaml"
+		err := CreateInvalidConfigFile(configFileName, server.Addr(), MockPassword)
+		assert.NoError(t, err)
+		defer func() {
+			err := os.Remove(configFileName)
+			assert.NoError(t, err)
+		}()
+
+		r := &bytes.Buffer{}
+		w := &bytes.Buffer{}
+
+		app := NewApp(r, w)
+		args := os.Args[0:1]
+		args = append(args, "-cfg="+configFileName)
+		args = append(args, "-c="+MockCommandHelp)
+
+		err = app.Run(args)
+		assert.EqualError(t, err, "yaml: line 1: did not find expected key")
 	}()
 
 	// Test empty address and password. Log is not used.
@@ -295,6 +347,39 @@ func TestNewApp(t *testing.T) {
 		err = app.Run(args)
 		assert.EqualError(t, err, "address is not set: to set address add -a host:port")
 	}()
+
+	// Test empty password. Log is not used.
+	func() {
+		r := &bytes.Buffer{}
+		w := &bytes.Buffer{}
+
+		app := NewApp(r, w)
+		args := os.Args[0:1]
+		// Hack to use os.Args[0] in go run
+		args[0] = ""
+		args = append(args, "-a="+server.Addr())
+		args = append(args, "-c="+MockCommandHelp)
+
+		err = app.Run(args)
+		assert.EqualError(t, err, "password is not set: to set password add -p password")
+	}()
+
+	// Positive test Interactive. Log is not used.
+	func() {
+		r := &bytes.Buffer{}
+		w := &bytes.Buffer{}
+
+		app := NewApp(r, w)
+		args := os.Args[0:1]
+		args = append(args, "-a="+server.Addr())
+		args = append(args, "-p="+MockPassword)
+
+		r.WriteString(MockCommandHelp + "\n")
+		r.WriteString(CommandQuit + "\n")
+
+		err = app.Run(args)
+		assert.NoError(t, err)
+	}()
 }
 
 // CreateConfigFile creates config file with default section.
@@ -302,6 +387,21 @@ func CreateConfigFile(name string, address string, password string) error {
 	var stringBody = fmt.Sprintf(
 		"%s:\n  address: \"%s\"\n  password: \"%s\"\n  log: \"%s\"",
 		DefaultConfigEnv, address, password, DefaultLogName,
+	)
+	file, err := os.Create(name)
+	if err != nil {
+		return err
+	}
+	_, err = file.WriteString(stringBody)
+
+	return err
+}
+
+// CreateIncorrectConfigFile creates incorrect yaml config file.
+func CreateInvalidConfigFile(name string, address string, password string) error {
+	var stringBody = fmt.Sprintf(
+		"address: \"%s\"\n  password: \"%s\"\n  log: \"%s\"",
+		address, password, DefaultLogName,
 	)
 	file, err := os.Create(name)
 	if err != nil {

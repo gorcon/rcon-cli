@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+### Fixed
+- Correction of text after AutoCorrect
+
+### Added
+- More tests
 
 ## [v0.4.0] - 2019-08-05
 ### Added
@@ -30,7 +35,7 @@ than entry in configuration file.
 ### Fixed
 - Fix global options in interactive mode.
 
-## 0.1.0 - 2013-07-22
+## v0.1.0 - 2013-07-22
 ### Added
 - Initial implementation.
 

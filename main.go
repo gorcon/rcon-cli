@@ -69,35 +69,35 @@ func NewApp(r io.Reader, w io.Writer) *cli.App {
 	app.Usage = "CLI for executing queries on a remote server"
 	app.Description = "Can be run in two modes - in the mode of a single query" +
 		"\n   and in the mode of reading the input stream"
-	app.Version = "0.4.0"
+	app.Version = "0.4.1"
 	app.Copyright = "Copyright (c) 2019 Pavel Korotkiy (outdead)"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name: "a, address",
-			Usage: "set host and port to remote rcon server. Example 127.0.0.1:16260" +
+			Usage: "Set host and port to remote rcon server. Example 127.0.0.1:16260" +
 				"\n                              can be set in the config file rcon.yaml",
 		},
 		cli.StringFlag{
 			Name: "p, password",
-			Usage: "set password to remote rcon server" +
+			Usage: "Set password to remote rcon server" +
 				"\n                               can be set in the config file rcon.yaml",
 		},
 		cli.StringFlag{
 			Name:  "c, command",
-			Usage: "command to Execute on remote server. Required flag to run in single mode",
+			Usage: "Command to execute on remote server. Required flag to run in single mode",
 		},
 		cli.StringFlag{
 			Name: "e, env",
-			Usage: "allows to select remote server address and password from the environment" +
+			Usage: "Allows to select remote server address and password from the environment" +
 				"\n                              in the configuration file",
 		},
 		cli.StringFlag{
 			Name:  "l, log",
-			Usage: "path and name of the log file. if not specified, it is taken from the config.",
+			Usage: "Path and name of the log file. if not specified, it is taken from the config.",
 		},
 		cli.StringFlag{
 			Name: "cfg",
-			Usage: "allows to specify the path and name of the configuration file. The default" +
+			Usage: "Allows to specify the path and name of the configuration file. The default" +
 				"\n                value is rcon.yaml.",
 		},
 	}
@@ -109,7 +109,7 @@ func NewApp(r io.Reader, w io.Writer) *cli.App {
 
 		command := c.String("command")
 		if command == "" {
-			return Interactive(r, os.Stdout, address, password)
+			return Interactive(r, w, address, password)
 		}
 
 		if address == "" || password == "" {
@@ -159,12 +159,12 @@ func Execute(w io.Writer, address string, password string, command string) error
 // and prints the responses.
 func Interactive(r io.Reader, w io.Writer, address string, password string) error {
 	if address == "" {
-		fmt.Fprint(w, "enter host and port from remote server: ")
+		fmt.Fprint(w, "Enter remote host and port [ip:port]: ")
 		fmt.Fscanln(r, &address)
 	}
 
 	if password == "" {
-		fmt.Fprint(w, "enter the password: ")
+		fmt.Fprint(w, "Enter password: ")
 		fmt.Fscanln(r, &password)
 	}
 
@@ -173,7 +173,7 @@ func Interactive(r io.Reader, w io.Writer, address string, password string) erro
 	}
 
 	scanner := bufio.NewScanner(r)
-	fmt.Fprintf(w, "waiting commands for %s\n> ", address)
+	fmt.Fprintf(w, "Waiting commands for %s\n> ", address)
 	for scanner.Scan() {
 		command := scanner.Text()
 		if command != "" {
