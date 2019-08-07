@@ -68,12 +68,9 @@ func TestAddLog(t *testing.T) {
 }
 
 func TestGetLogFile(t *testing.T) {
+	logDir := "temp"
 	logName := "tmpfile.log"
-
-	defer func() {
-		err := os.Remove(logName)
-		assert.NoError(t, err)
-	}()
+	logPath := logDir + "/" + logName
 
 	// Test empty log file name.
 	func() {
@@ -82,18 +79,63 @@ func TestGetLogFile(t *testing.T) {
 		assert.EqualError(t, err, "empty file name")
 	}()
 
-	// Positive test create new lo file.
+	// Test stat permission denied.
 	func() {
-		file, err := GetLogFile(logName)
-		assert.NotNil(t, file)
-		assert.NoError(t, err)
+		if err := os.Mkdir(logDir, 0400); err != nil {
+			assert.NoError(t, err)
+			return
+		}
+		defer func() {
+			err := os.RemoveAll(logDir)
+			assert.NoError(t, err)
+		}()
+
+		file, err := GetLogFile(logPath)
+		assert.Nil(t, file)
+		assert.EqualError(t, err, fmt.Sprintf("stat %s: permission denied", logPath))
 	}()
 
-	// Positive test get exist log file.
+	// Test create permission denied.
 	func() {
-		file, err := GetLogFile(logName)
+		if err := os.Mkdir(logDir, 0500); err != nil {
+			assert.NoError(t, err)
+			return
+		}
+		defer func() {
+			err := os.RemoveAll(logDir)
+			assert.NoError(t, err)
+		}()
+
+		file, err := GetLogFile(logPath)
+		assert.Nil(t, file)
+		assert.EqualError(t, err, fmt.Sprintf("open %s: permission denied", logPath))
+	}()
+
+	// Positive test create new log file + test open permission denied.
+	func() {
+		if err := os.Mkdir(logDir, 0700); err != nil {
+			assert.NoError(t, err)
+			return
+		}
+		defer func() {
+			err := os.RemoveAll(logDir)
+			assert.NoError(t, err)
+		}()
+
+		// Positive test create new log file.
+		file, err := GetLogFile(logPath)
 		assert.NotNil(t, file)
 		assert.NoError(t, err)
+
+		if err := os.Chmod(logPath, 0000); err != nil {
+			assert.NoError(t, err)
+			return
+		}
+
+		// Test open permission denied.
+		file, err = GetLogFile(logPath)
+		assert.Nil(t, file)
+		assert.EqualError(t, err, fmt.Sprintf("open %s: permission denied", logPath))
 	}()
 }
 

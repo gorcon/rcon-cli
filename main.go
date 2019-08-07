@@ -69,7 +69,7 @@ func NewApp(r io.Reader, w io.Writer) *cli.App {
 	app.Usage = "CLI for executing queries on a remote server"
 	app.Description = "Can be run in two modes - in the mode of a single query" +
 		"\n   and in the mode of reading the input stream"
-	app.Version = "0.4.1"
+	app.Version = "0.4.2"
 	app.Copyright = "Copyright (c) 2019 Pavel Korotkiy (outdead)"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -303,16 +303,20 @@ func GetLogFile(logName string) (*os.File, error) {
 	}
 
 	var file *os.File
-	if _, err := os.Stat(logName); os.IsNotExist(err) {
+	if _, err := os.Stat(logName); err == nil {
+		// Open current file.
+		file, err = os.OpenFile(logName, os.O_APPEND|os.O_WRONLY, 0777)
+		if err != nil {
+			return nil, err
+		}
+	} else if os.IsNotExist(err) {
+		// Create new file.
 		file, err = os.Create(logName)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		file, err = os.OpenFile(logName, os.O_APPEND|os.O_WRONLY, 0777)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	return file, nil
