@@ -4,11 +4,15 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+
+## [v0.5.0] - 2020-06-18
 ### Fixed
 - Correction of text after AutoCorrect
 
 ### Added
 - More tests
+- Add Go modules (go1.13)
+- Add golang-ci linter
 
 ## [v0.4.0] - 2019-08-05
 ### Added
@@ -39,7 +43,8 @@ than entry in configuration file.
 ### Added
 - Initial implementation.
 
-[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.5.0...HEAD
+[v0.5.0]: https://github.com/gorcon/rcon-cli/compare/v0.4.0...v0.5.0
 [v0.4.0]: https://github.com/gorcon/rcon-cli/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/gorcon/rcon-cli/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/gorcon/rcon-cli/compare/v0.1.0...v0.2.0

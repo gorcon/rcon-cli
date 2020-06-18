@@ -199,7 +199,7 @@ func ReadYamlConfig(path string) (cfg Config, err error) {
 		return cfg, err
 	}
 
-	if err = yaml.Unmarshal(file, &cfg); err != nil {
+	if err := yaml.Unmarshal(file, &cfg); err != nil {
 		return cfg, err
 	}
 
@@ -260,7 +260,7 @@ func GetCredentials(c *cli.Context) (address string, password string, err error)
 		}
 	}
 
-	return
+	return address, password, err
 }
 
 // CheckCredentials sends auth request for remote server. Returns en error if
@@ -303,19 +303,23 @@ func GetLogFile(logName string) (*os.File, error) {
 	}
 
 	var file *os.File
-	if _, err := os.Stat(logName); err == nil {
+
+	_, err := os.Stat(logName)
+
+	switch {
+	case err == nil:
 		// Open current file.
 		file, err = os.OpenFile(logName, os.O_APPEND|os.O_WRONLY, 0777)
 		if err != nil {
 			return nil, err
 		}
-	} else if os.IsNotExist(err) {
+	case os.IsNotExist(err):
 		// Create new file.
 		file, err = os.Create(logName)
 		if err != nil {
 			return nil, err
 		}
-	} else {
+	default:
 		return nil, err
 	}
 
