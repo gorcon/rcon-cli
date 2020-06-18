@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VER="0.4.2"
+VER="0.5.0"
 
 rm -fr release
 mkdir release
