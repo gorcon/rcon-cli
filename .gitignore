@@ -6,6 +6,7 @@ build.sh
 vendor/
 Gopkg.lock
 release/
+logs/
 *.log
 rcon-temp.yaml
 temp/

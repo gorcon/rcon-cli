@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.6.0] - 2020-07-10
+### Fixed
+- Fix `Conan Exiles "response for another request" error` bug #6
+
 ## [v0.5.0] - 2020-06-18
 ### Fixed
 - Correction of text after AutoCorrect
@@ -43,7 +47,8 @@ than entry in configuration file.
 ### Added
 - Initial implementation.
 
-[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.6.0...HEAD
+[v0.5.0]: https://github.com/gorcon/rcon-cli/compare/v0.5.0...v0.6.0
 [v0.5.0]: https://github.com/gorcon/rcon-cli/compare/v0.4.0...v0.5.0
 [v0.4.0]: https://github.com/gorcon/rcon-cli/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/gorcon/rcon-cli/compare/v0.2.0...v0.3.0

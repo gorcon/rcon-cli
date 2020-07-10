@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-VER="0.5.0"
+VERSION="$1"
+
+if [ -z "${VERSION}" ]; then
+   echo "VERSION is not set. Use ./release.sh 0.0.0" >&2
+   exit 1
+fi
 
 rm -fr release
 mkdir release
@@ -16,33 +21,33 @@ function make_release() {
     fi
     local ext="$4"
 
-    local dir=release/$release_name
+    local dir="release/${release_name}"
 
-    mkdir -p $dir
-    env GOARCH=$arch GOOS=$os go build -ldflags "-s -w" -o $dir/rcon$ext
-    #upx-ucl --best $dir/rcon$ext -o $dir/rcon-upx$ext
+    mkdir -p "${dir}"
+    env GOARCH="${arch}" GOOS="${os}" go build -ldflags "-s -w -X main.Version=${VERSION}" -o "${dir}/rcon${ext}"
+    #upx-ucl --best "${dir}/rcon${ext}" -o "${dir}/rcon-upx${ext}"
 
-    cp LICENSE $dir
-    cp README.md $dir
-    cp CHANGELOG.md $dir
-    cp rcon.yaml $dir
+    cp LICENSE "${dir}"
+    cp README.md "${dir}"
+    cp CHANGELOG.md "${dir}"
+    cp rcon.yaml "${dir}"
 
     cd release/
-    case $os in
+    case "${os}" in
         linux)
-            tar -zcvf $release_name.tar.gz $release_name
-            md5sum $release_name.tar.gz >> checksum.txt
+            tar -zcvf "${release_name}.tar.gz" "${release_name}"
+            md5sum "${release_name}.tar.gz" >> checksum.txt
             ;;
         windows)
-            zip -r $release_name.zip $release_name
-            md5sum $release_name.zip >> checksum.txt
+            zip -r "${release_name}.zip" "${release_name}"
+            md5sum "${release_name}.zip" >> checksum.txt
             ;;
     esac
-    rm -r $release_name
+    rm -r "${release_name}"
     cd ../
 }
 
-make_release 386 linux rcon-$VER-i386_linux
-make_release amd64 linux rcon-$VER-amd64_linux
-make_release 386 windows rcon-$VER-win32 .exe
-make_release amd64 windows rcon-$VER-win64 .exe
+make_release 386 linux "rcon-${VERSION}-i386_linux"
+make_release amd64 linux "rcon-${VERSION}-amd64_linux"
+make_release 386 windows "rcon-${VERSION}-win32" .exe
+make_release amd64 windows "rcon-${VERSION}-win64" .exe

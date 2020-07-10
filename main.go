@@ -38,6 +38,10 @@ const LogRecordFormat = "[%s] %s: %s\n%s\n\n"
 // If not specified, no logging will be performed.
 var LogFileName string
 
+// Version displays service version in semantic versioning (http://semver.org/).
+// Can be replaced while compiling with flag `-ldflags "-X main.Version=${VERSION}"`
+var Version = "develop"
+
 // Config allows to take a remote server address and password from
 // the configuration file. This enables not to specify these flags when
 // running the CLI.
@@ -63,14 +67,14 @@ func main() {
 	}
 }
 
-// NewApp creates a new cli Application
+// NewApp creates a new cli Application.
 func NewApp(r io.Reader, w io.Writer) *cli.App {
 	app := cli.NewApp()
 	app.Usage = "CLI for executing queries on a remote server"
 	app.Description = "Can be run in two modes - in the mode of a single query" +
 		"\n   and in the mode of reading the input stream"
-	app.Version = "0.4.2"
-	app.Copyright = "Copyright (c) 2019 Pavel Korotkiy (outdead)"
+	app.Version = Version
+	app.Copyright = "Copyright (c) 2020 Pavel Korotkiy (outdead)"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name: "a, address",
@@ -112,14 +116,12 @@ func NewApp(r io.Reader, w io.Writer) *cli.App {
 			return Interactive(r, w, address, password)
 		}
 
-		if address == "" || password == "" {
-			if address == "" {
-				return errors.New("address is not set: to set address add -a host:port")
-			}
+		if address == "" {
+			return errors.New("address is not set: to set address add -a host:port")
+		}
 
-			if password == "" {
-				return errors.New("password is not set: to set password add -p password")
-			}
+		if password == "" {
+			return errors.New("password is not set: to set password add -p password")
 		}
 
 		return Execute(w, address, password, command)
@@ -173,7 +175,7 @@ func Interactive(r io.Reader, w io.Writer, address string, password string) erro
 	}
 
 	scanner := bufio.NewScanner(r)
-	fmt.Fprintf(w, "Waiting commands for %s\n> ", address)
+	fmt.Fprintf(w, "Waiting commands for %s (or type %s to exit)\n> ", address, CommandQuit)
 	for scanner.Scan() {
 		command := scanner.Text()
 		if command != "" {
