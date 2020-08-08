@@ -9,7 +9,7 @@ fi
 
 rm -fr release
 mkdir release
-print > release/checksum.txt
+touch release/checksum.txt
 
 function make_release() {
     local arch="$1"
@@ -34,7 +34,7 @@ function make_release() {
 
     cd release/
     case "${os}" in
-        linux)
+        linux | darwin)
             tar -zcvf "${release_name}.tar.gz" "${release_name}"
             md5sum "${release_name}.tar.gz" >> checksum.txt
             ;;
@@ -51,3 +51,4 @@ make_release 386 linux "rcon-${VERSION}-i386_linux"
 make_release amd64 linux "rcon-${VERSION}-amd64_linux"
 make_release 386 windows "rcon-${VERSION}-win32" .exe
 make_release amd64 windows "rcon-${VERSION}-win64" .exe
+make_release amd64 darwin "rcon-${VERSION}-amd64_darwin"
