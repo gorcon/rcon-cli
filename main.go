@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/go-yaml/yaml"
 	"github.com/gorcon/rcon"
 	"github.com/urfave/cli"
+	"gopkg.in/yaml.v2"
 )
 
 // DefaultConfigName sets the default config file name.
@@ -28,7 +28,7 @@ const DefaultLogName = "rcon-default.log"
 // CommandQuit is the command for exit from Interactive mode.
 const CommandQuit = ":q"
 
-// LogRecordTimeLayout is layout for convert time.Now to String
+// LogRecordTimeLayout is layout for convert time.Now to String.
 const LogRecordTimeLayout = "2006-01-02 15:04:05"
 
 // LogRecordFormat is format to log line record.
@@ -39,7 +39,7 @@ const LogRecordFormat = "[%s] %s: %s\n%s\n\n"
 var LogFileName string
 
 // Version displays service version in semantic versioning (http://semver.org/).
-// Can be replaced while compiling with flag `-ldflags "-X main.Version=${VERSION}"`
+// Can be replaced while compiling with flag `-ldflags "-X main.Version=${VERSION}"`.
 var Version = "develop"
 
 // Config allows to take a remote server address and password from
@@ -51,7 +51,7 @@ var Version = "develop"
 // default:
 //   address: "127.0.0.1:16260"
 //   password: "password"
-// ```
+// ```.
 type Config map[string]struct {
 	Address  string `json:"address" yaml:"address"`
 	Password string `json:"password" yaml:"password"`
@@ -146,6 +146,7 @@ func Execute(w io.Writer, address string, password string, command string) error
 	if result != "" {
 		fmt.Fprintln(w, result)
 	}
+
 	if err != nil {
 		return err
 	}
@@ -174,8 +175,9 @@ func Interactive(r io.Reader, w io.Writer, address string, password string) erro
 		return err
 	}
 
-	scanner := bufio.NewScanner(r)
 	fmt.Fprintf(w, "Waiting commands for %s (or type %s to exit)\n> ", address, CommandQuit)
+
+	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		command := scanner.Text()
 		if command != "" {
@@ -223,12 +225,13 @@ func GetCredentials(c *cli.Context) (address string, password string, err error)
 	path := c.GlobalString("cfg")
 	if path == "" {
 		var home string
+
 		home, err = filepath.Abs(filepath.Dir(os.Args[0]))
 		if err != nil {
 			return address, password, err
 		}
-		path = home + "/" + DefaultConfigName
 
+		path = home + "/" + DefaultConfigName
 		if _, err2 := os.Stat(path); err2 != nil {
 			return address, password, err2
 		}
@@ -236,30 +239,32 @@ func GetCredentials(c *cli.Context) (address string, password string, err error)
 
 	// Read the config file if file exists.
 	_, err = os.Stat(path)
-	if err == nil {
-		cfg, err := ReadYamlConfig(path)
-		if err != nil {
-			return address, password, err
-		}
+	if err != nil {
+		return address, password, err
+	}
 
-		e := c.GlobalString("e")
-		if e == "" {
-			e = DefaultConfigEnv
-		}
+	cfg, err := ReadYamlConfig(path)
+	if err != nil {
+		return address, password, err
+	}
 
-		// Get address from environment in config if -a flag is not defined.
-		if address == "" {
-			address = cfg[e].Address
-		}
+	e := c.GlobalString("e")
+	if e == "" {
+		e = DefaultConfigEnv
+	}
 
-		// Get password from environment in config if -p flag is not defined.
-		if password == "" {
-			password = cfg[e].Password
-		}
+	// Get address from environment in config if -a flag is not defined.
+	if address == "" {
+		address = cfg[e].Address
+	}
 
-		if LogFileName == "" {
-			LogFileName = cfg[e].Log
-		}
+	// Get password from environment in config if -p flag is not defined.
+	if password == "" {
+		password = cfg[e].Password
+	}
+
+	if LogFileName == "" {
+		LogFileName = cfg[e].Log
 	}
 
 	return address, password, err
@@ -289,8 +294,7 @@ func AddLog(logName string, address string, request string, response string) err
 	}
 	defer file.Close()
 
-	now := time.Now()
-	line := fmt.Sprintf(LogRecordFormat, now.Format(LogRecordTimeLayout), address, request, response)
+	line := fmt.Sprintf(LogRecordFormat, time.Now().Format(LogRecordTimeLayout), address, request, response)
 	if _, err := file.WriteString(line); err != nil {
 		return err
 	}

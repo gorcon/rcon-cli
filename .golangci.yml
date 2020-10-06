@@ -17,6 +17,7 @@ output:
   print-issued-lines: true
   print-linter-name: true
 
+# SEE: https://golangci-lint.run/usage/configuration/
 linters-settings:
   dupl:
     # tokens count to trigger issue, 150 by default
@@ -30,12 +31,12 @@ linters-settings:
     check-blank: false
   funlen:
     # default is 60
-    lines: 80
+    lines: 60
     # default is 40
     statements: 40
   gocognit:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
-    min-complexity: 30
+    min-complexity: 15
   goconst:
     # minimal length of string constant, 3 by default
     min-len: 3
@@ -48,9 +49,11 @@ linters-settings:
       - experimental
     disabled-checks:
       - paramTypeCombine
+    #  - whyNoLint
+    #  - commentedOutCode
   gocyclo:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
-    min-complexity: 20
+    min-complexity: 15
   godox:
     keywords:
       - "BUG"
@@ -69,7 +72,8 @@ linters-settings:
         # the list of enabled checks, see https://github.com/tommy-muehle/go-mnd/#checks for description.
         checks: argument,case,condition,operation,return,assign
   govet:
-    check-shadowing: false
+    # report about shadowed variables.
+    check-shadowing: true
   depguard:
     list-type: blacklist
     packages:
@@ -81,7 +85,7 @@ linters-settings:
       - gopkg.in/Sirupsen/logrus.v0
       - gopkg.in/Sirupsen/logrus.v1
   lll:
-    line-length: 136 # 120 is default
+    line-length: 120 # 120 is default
   maligned:
     # print struct with more effective memory layout or not, false by default
     suggest-new: true
@@ -125,5 +129,5 @@ linters:
   enable-all: true
   disable:
     - gomnd
-    - wsl
     - gochecknoglobals
+    - goerr113
