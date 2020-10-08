@@ -23,7 +23,7 @@ func Execute(address string, password string, command string) (string, error) {
 	return console.Execute(command)
 }
 
-// DialInteractive parses commands from input reader, executes them on remote
+// Interactive parses commands from input reader, executes them on remote
 // server and writes responses to output writer. Password can be empty string.
 // In this case password will be prompted in an interactive window.
 func Interactive(r io.Reader, w io.Writer, address string, password string) error {
