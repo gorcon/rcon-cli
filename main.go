@@ -5,25 +5,29 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/gorcon/rcon"
+	"github.com/gorcon/rcon-cli/internal/config"
+	"github.com/gorcon/rcon-cli/internal/proto/rcon"
+	"github.com/gorcon/rcon-cli/internal/proto/telnet"
+	"github.com/gorcon/rcon-cli/internal/session"
 	"github.com/urfave/cli"
-	"gopkg.in/yaml.v2"
 )
 
-// DefaultConfigName sets the default config file name.
-const DefaultConfigName = "rcon.yaml"
+// Defaults.
+const (
+	// DefaultConfigName sets the default config file name.
+	DefaultConfigName = "rcon.yaml"
 
-// DefaultConfigEnv is the name of the environment, which is taken
-// as default unless another value is passed.
-const DefaultConfigEnv = "default"
+	// DefaultConfigEnv is the name of the environment, which is taken
+	// as default unless another value is passed.
+	DefaultConfigEnv = "default"
 
-// DefaultLogName sets the default log file name.
-const DefaultLogName = "rcon-default.log"
+	// DefaultLogName sets the default log file name.
+	DefaultLogName = "rcon-default.log"
+)
 
 // CommandQuit is the command for exit from Interactive mode.
 const CommandQuit = ":q"
@@ -36,27 +40,12 @@ const LogRecordFormat = "[%s] %s: %s\n%s\n\n"
 
 // LogFileName is the name of the file to which requests will be logged.
 // If not specified, no logging will be performed.
+// TODO: replace global LogFileName to better implementation.
 var LogFileName string
 
 // Version displays service version in semantic versioning (http://semver.org/).
 // Can be replaced while compiling with flag `-ldflags "-X main.Version=${VERSION}"`.
 var Version = "develop"
-
-// Config allows to take a remote server address and password from
-// the configuration file. This enables not to specify these flags when
-// running the CLI.
-//
-// Example:
-// ```yaml
-// default:
-//   address: "127.0.0.1:16260"
-//   password: "password"
-// ```.
-type Config map[string]struct {
-	Address  string `json:"address" yaml:"address"`
-	Password string `json:"password" yaml:"password"`
-	Log      string `json:"log" yaml:"log"`
-}
 
 func main() {
 	app := NewApp(os.Stdin, os.Stdout)
@@ -78,13 +67,13 @@ func NewApp(r io.Reader, w io.Writer) *cli.App {
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name: "a, address",
-			Usage: "Set host and port to remote rcon server. Example 127.0.0.1:16260" +
-				"\n                              can be set in the config file rcon.yaml",
+			Usage: "Set host and port to remote server. Example 127.0.0.1:16260" +
+				"\n                              can be set in the config file " + DefaultConfigName + ".",
 		},
 		cli.StringFlag{
 			Name: "p, password",
-			Usage: "Set password to remote rcon server" +
-				"\n                               can be set in the config file rcon.yaml",
+			Usage: "Set password to remote server" +
+				"\n                               can be set in the config file " + DefaultConfigName + ".",
 		},
 		cli.StringFlag{
 			Name:  "c, command",
@@ -102,47 +91,54 @@ func NewApp(r io.Reader, w io.Writer) *cli.App {
 		cli.StringFlag{
 			Name: "cfg",
 			Usage: "Allows to specify the path and name of the configuration file. The default" +
-				"\n                value is rcon.yaml.",
+				"\n                value is " + DefaultConfigName + ".",
+		},
+		cli.StringFlag{
+			Name:  "t, type",
+			Usage: "Allows to specify type of connection. The default value is " + session.DefaultProtocol + ".",
 		},
 	}
 	app.Action = func(c *cli.Context) error {
-		address, password, err := GetCredentials(c)
+		ses, err := GetCredentials(c)
 		if err != nil {
 			return err
 		}
 
 		command := c.String("command")
 		if command == "" {
-			return Interactive(r, w, address, password)
+			return Interactive(r, w, ses)
 		}
 
-		if address == "" {
+		if ses.Address == "" {
 			return errors.New("address is not set: to set address add -a host:port")
 		}
 
-		if password == "" {
+		if ses.Password == "" {
 			return errors.New("password is not set: to set password add -p password")
 		}
 
-		return Execute(w, address, password, command)
+		return Execute(w, ses, command)
 	}
 
 	return app
 }
 
 // Execute sends command to Execute to the remote server and prints the response.
-func Execute(w io.Writer, address string, password string, command string) error {
+func Execute(w io.Writer, ses session.Session, command string) error {
 	if command == "" {
 		return errors.New("command is not set")
 	}
 
-	console, err := rcon.Dial(address, password)
-	if err != nil {
-		return err
-	}
-	defer console.Close()
+	var result string
+	var err error
 
-	result, err := console.Execute(command)
+	switch ses.Type {
+	case session.ProtocolTELNET:
+		result, err = telnet.Execute(ses.Address, ses.Password, command)
+	default:
+		result, err = rcon.Execute(ses.Address, ses.Password, command)
+	}
+
 	if result != "" {
 		fmt.Fprintln(w, result)
 	}
@@ -151,7 +147,7 @@ func Execute(w io.Writer, address string, password string, command string) error
 		return err
 	}
 
-	if err := AddLog(LogFileName, address, command, result); err != nil {
+	if err := AddLog(LogFileName, ses.Address, command, result); err != nil {
 		return fmt.Errorf("log error: %s", err)
 	}
 
@@ -160,92 +156,64 @@ func Execute(w io.Writer, address string, password string, command string) error
 
 // Interactive reads stdin, parses commands, executes them on remote server
 // and prints the responses.
-func Interactive(r io.Reader, w io.Writer, address string, password string) error {
-	if address == "" {
+func Interactive(r io.Reader, w io.Writer, ses session.Session) error {
+	if ses.Address == "" {
 		fmt.Fprint(w, "Enter remote host and port [ip:port]: ")
-		fmt.Fscanln(r, &address)
+		fmt.Fscanln(r, &ses.Address)
 	}
 
-	if password == "" {
-		fmt.Fprint(w, "Enter password: ")
-		fmt.Fscanln(r, &password)
-	}
-
-	if err := CheckCredentials(address, password); err != nil {
-		return err
-	}
-
-	fmt.Fprintf(w, "Waiting commands for %s (or type %s to exit)\n> ", address, CommandQuit)
-
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		command := scanner.Text()
-		if command != "" {
-			if command == CommandQuit {
-				break
-			}
-
-			if err := Execute(w, address, password, command); err != nil {
-				return err
-			}
+	switch ses.Type {
+	case session.ProtocolTELNET:
+		return telnet.Interactive(r, w, ses.Address, ses.Password)
+	default:
+		// Default type is RCON.
+		if ses.Password == "" {
+			fmt.Fprint(w, "Enter password: ")
+			fmt.Fscanln(r, &ses.Password)
 		}
 
-		fmt.Fprint(w, "> ")
+		if err := rcon.CheckCredentials(ses.Address, ses.Password); err != nil {
+			return err
+		}
+
+		fmt.Fprintf(w, "Waiting commands for %s (or type %s to exit)\n> ", ses.Address, CommandQuit)
+
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			command := scanner.Text()
+			if command != "" {
+				if command == CommandQuit {
+					break
+				}
+
+				if err := Execute(w, ses, command); err != nil {
+					return err
+				}
+			}
+
+			fmt.Fprint(w, "> ")
+		}
 	}
 
 	return nil
 }
 
-// ReadYamlConfig reads config data from yaml file.
-func ReadYamlConfig(path string) (cfg Config, err error) {
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		return cfg, err
-	}
-
-	if err := yaml.Unmarshal(file, &cfg); err != nil {
-		return cfg, err
-	}
-
-	return cfg, nil
-}
-
 // GetCredentials parses os args or config file for details of connecting to
 // a remote server. If the address and password flags were received, the
 // configuration file is ignored.
-func GetCredentials(c *cli.Context) (address string, password string, err error) {
-	address = c.GlobalString("a")
-	password = c.GlobalString("p")
+func GetCredentials(c *cli.Context) (ses session.Session, err error) {
+	ses.Address = c.GlobalString("a")
+	ses.Password = c.GlobalString("p")
 	LogFileName = c.GlobalString("l")
+	ses.Type = c.GlobalString("t")
 
-	if address != "" && password != "" {
-		return address, password, nil
+	if ses.Address != "" && ses.Password != "" {
+		return ses, nil
 	}
 
-	path := c.GlobalString("cfg")
-	if path == "" {
-		var home string
-
-		home, err = filepath.Abs(filepath.Dir(os.Args[0]))
-		if err != nil {
-			return address, password, err
-		}
-
-		path = home + "/" + DefaultConfigName
-		if _, err2 := os.Stat(path); err2 != nil {
-			return address, password, err2
-		}
-	}
-
-	// Read the config file if file exists.
-	_, err = os.Stat(path)
+	cfg, err := GetConfig(c)
 	if err != nil {
-		return address, password, err
-	}
-
-	cfg, err := ReadYamlConfig(path)
-	if err != nil {
-		return address, password, err
+		return ses, err
 	}
 
 	e := c.GlobalString("e")
@@ -254,31 +222,53 @@ func GetCredentials(c *cli.Context) (address string, password string, err error)
 	}
 
 	// Get address from environment in config if -a flag is not defined.
-	if address == "" {
-		address = cfg[e].Address
+	if ses.Address == "" {
+		ses.Address = (*cfg)[e].Address
 	}
 
 	// Get password from environment in config if -p flag is not defined.
-	if password == "" {
-		password = cfg[e].Password
+	if ses.Password == "" {
+		ses.Password = (*cfg)[e].Password
 	}
 
 	if LogFileName == "" {
-		LogFileName = cfg[e].Log
+		LogFileName = (*cfg)[e].Log
 	}
 
-	return address, password, err
+	if ses.Type == "" {
+		ses.Type = (*cfg)[e].Type
+	}
+
+	return ses, err
 }
 
-// CheckCredentials sends auth request for remote server. Returns en error if
-// address or password is incorrect.
-func CheckCredentials(address string, password string) error {
-	console, err := rcon.Dial(address, password)
-	if err != nil {
-		return err
+// GetConfig finds and parses config file for details of connecting to
+// a remote server.
+func GetConfig(c *cli.Context) (*config.Config, error) {
+	path := c.GlobalString("cfg")
+	if path == "" {
+		home, err := filepath.Abs(filepath.Dir(os.Args[0]))
+		if err != nil {
+			return nil, err
+		}
+
+		path = home + "/" + DefaultConfigName
+		if _, err := os.Stat(path); err != nil {
+			return nil, err
+		}
 	}
 
-	return console.Close()
+	// Read the config file if file exists.
+	if _, err := os.Stat(path); err != nil {
+		return nil, err
+	}
+
+	cfg, err := config.ReadYamlConfig(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
 
 // AddLog saves request and response to log file.

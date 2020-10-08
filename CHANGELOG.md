@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 ## Added
 - Added support amd64 darwin compilation.
+- Added 7 Days to Die support #5. Add `-t telnet` argument when execute `rcon` cli.
 
 ## [v0.6.0] - 2020-07-10
 ### Fixed

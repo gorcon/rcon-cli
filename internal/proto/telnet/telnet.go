@@ -1,0 +1,42 @@
+package telnet
+
+import (
+	"errors"
+	"io"
+
+	"github.com/gorcon/telnet"
+)
+
+// Execute sends command to Execute to the remote server and returns
+// the response.
+func Execute(address string, password string, command string) (string, error) {
+	if command == "" {
+		return "", errors.New("command is not set")
+	}
+
+	console, err := telnet.Dial(address, password)
+	if err != nil {
+		return "", err
+	}
+	defer console.Close()
+
+	return console.Execute(command)
+}
+
+// DialInteractive parses commands from input reader, executes them on remote
+// server and writes responses to output writer. Password can be empty string.
+// In this case password will be prompted in an interactive window.
+func Interactive(r io.Reader, w io.Writer, address string, password string) error {
+	return telnet.DialInteractive(r, w, address, password)
+}
+
+// CheckCredentials sends auth request for remote server. Returns en error if
+// address or password is incorrect.
+func CheckCredentials(address string, password string) error {
+	console, err := telnet.Dial(address, password)
+	if err != nil {
+		return err
+	}
+
+	return console.Close()
+}

@@ -6,30 +6,29 @@ import (
 	"os"
 	"testing"
 
+	"github.com/gorcon/rcon-cli/internal/session"
+
+	"github.com/gorcon/rcon-cli/internal/config"
 	"github.com/stretchr/testify/assert"
 )
 
-func newConfig() *Config {
-	return &Config{
-		"default": struct {
-			Address  string `json:"address" yaml:"address"`
-			Password string `json:"password" yaml:"password"`
-			Log      string `json:"log" yaml:"log"`
-		}{Address: "", Password: "", Log: "rcon-default.log"},
+func newConfig() *config.Config {
+	return &config.Config{
+		"default": session.Session{Address: "", Password: "", Log: "rcon-default.log"},
 	}
 }
 
 func TestReadYamlConfig(t *testing.T) {
 	func() {
-		cfg, err := ReadYamlConfig("rcon.yaml")
+		cfg, err := config.ReadYamlConfig("rcon.yaml")
 		assert.NoError(t, err)
 		assert.Equal(t, newConfig(), &cfg)
 	}()
 
 	func() {
-		cfg, err := ReadYamlConfig("nonexist.yaml")
+		cfg, err := config.ReadYamlConfig("nonexist.yaml")
 		assert.NotNil(t, err)
-		var expected Config
+		var expected config.Config
 		assert.Equal(t, expected, cfg)
 	}()
 }
@@ -139,32 +138,6 @@ func TestGetLogFile(t *testing.T) {
 	}()
 }
 
-func TestCheckCredentials(t *testing.T) {
-	server, err := NewMockServer()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		assert.NoError(t, server.Close())
-		close(server.errors)
-		for err := range server.errors {
-			assert.NoError(t, err)
-		}
-	}()
-
-	// Test invalid credentials.
-	func() {
-		err = CheckCredentials(server.Addr(), "")
-		assert.Error(t, err)
-	}()
-
-	// Positive test CheckCredentials func.
-	func() {
-		err = CheckCredentials(server.Addr(), MockPassword)
-		assert.NoError(t, CheckCredentials(server.Addr(), MockPassword))
-	}()
-}
-
 func TestExecute(t *testing.T) {
 	server, err := NewMockServer()
 	if err != nil {
@@ -182,38 +155,38 @@ func TestExecute(t *testing.T) {
 
 	// Test empty address.
 	func() {
-		err := Execute(w, "", MockPassword, MockCommandHelp)
+		err := Execute(w, session.Session{Address: "", Password: MockPassword}, MockCommandHelp)
 		assert.Error(t, err)
 	}()
 
 	// Test empty password.
 	func() {
-		err := Execute(w, server.Addr(), "", MockCommandHelp)
+		err := Execute(w, session.Session{Address: server.Addr(), Password: ""}, MockCommandHelp)
 		assert.Error(t, err)
 	}()
 
 	// Test wrong password.
 	func() {
-		err := Execute(w, server.Addr(), "wrong", MockCommandHelp)
+		err := Execute(w, session.Session{Address: server.Addr(), Password: "wrong"}, MockCommandHelp)
 		assert.Error(t, err)
 	}()
 
 	// Test empty command.
 	func() {
-		err := Execute(w, server.Addr(), MockPassword, "")
+		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword}, "")
 		assert.Error(t, err)
 	}()
 
 	// Test long command.
 	func() {
 		bigCommand := make([]byte, 1001)
-		err := Execute(w, server.Addr(), MockPassword, string(bigCommand))
+		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword}, string(bigCommand))
 		assert.Error(t, err)
 	}()
 
 	// Positive test Execute func.
 	func() {
-		err := Execute(w, server.Addr(), MockPassword, MockCommandHelp)
+		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword}, MockCommandHelp)
 		assert.NoError(t, err)
 	}()
 
@@ -226,7 +199,7 @@ func TestExecute(t *testing.T) {
 			LogFileName = ""
 		}()
 
-		err := Execute(w, server.Addr(), MockPassword, MockCommandHelp)
+		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword}, MockCommandHelp)
 		assert.NoError(t, err)
 	}()
 }
@@ -251,7 +224,7 @@ func TestInteractive(t *testing.T) {
 		var r bytes.Buffer
 		r.WriteString(CommandQuit + "\n")
 
-		err = Interactive(&r, w, server.Addr(), "fake")
+		err = Interactive(&r, w, session.Session{Address: server.Addr(), Password: "fake"})
 		assert.Error(t, err)
 	}()
 
@@ -261,7 +234,7 @@ func TestInteractive(t *testing.T) {
 		r.WriteString(server.Addr() + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err = Interactive(&r, w, "", MockPassword)
+		err = Interactive(&r, w, session.Session{Address: "", Password: MockPassword})
 		assert.NoError(t, err)
 	}()
 
@@ -271,7 +244,7 @@ func TestInteractive(t *testing.T) {
 		r.WriteString(MockPassword + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err = Interactive(&r, w, server.Addr(), "")
+		err = Interactive(&r, w, session.Session{Address: server.Addr(), Password: ""})
 		assert.NoError(t, err)
 	}()
 
@@ -282,7 +255,7 @@ func TestInteractive(t *testing.T) {
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err = Interactive(r, w, server.Addr(), MockPassword)
+		err = Interactive(r, w, session.Session{Address: server.Addr(), Password: MockPassword})
 		assert.NoError(t, err)
 	}()
 }
