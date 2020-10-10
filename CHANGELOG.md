@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+
+## [v0.7.0] - 2020-10-10
 ## Added
 - Added support amd64 darwin compilation.
 - Added 7 Days to Die support #5. Add `-t telnet` argument when execute `rcon` cli.
@@ -50,7 +52,8 @@ than entry in configuration file.
 ### Added
 - Initial implementation.
 
-[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.7.0...HEAD
+[v0.7.0]: https://github.com/gorcon/rcon-cli/compare/0.6.0...v0.7.0
 [v0.6.0]: https://github.com/gorcon/rcon-cli/compare/0.5.0...v0.6.0
 [v0.5.0]: https://github.com/gorcon/rcon-cli/compare/v0.4.0...0.5.0
 [v0.4.0]: https://github.com/gorcon/rcon-cli/compare/v0.3.0...v0.4.0
