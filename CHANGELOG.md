@@ -4,9 +4,14 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+### Changed
+- Code and tests refactoring.
+
+### Fixed
+- Fixed changelog.
 
 ## [v0.7.0] - 2020-10-10
-## Added
+### Added
 - Added support amd64 darwin compilation.
 - Added 7 Days to Die support #5. Add `-t telnet` argument when execute `rcon` cli.
 

@@ -6,31 +6,31 @@ import (
 	"os"
 	"testing"
 
+	"github.com/gorcon/rcon-cli/internal/config"
 	"github.com/gorcon/rcon-cli/internal/session"
 
-	"github.com/gorcon/rcon-cli/internal/config"
+	"github.com/gorcon/rcon-cli/internal/logger"
 	"github.com/stretchr/testify/assert"
 )
 
-func newConfig() *config.Config {
-	return &config.Config{
-		"default": session.Session{Address: "", Password: "", Log: "rcon-default.log"},
-	}
-}
-
 func TestReadYamlConfig(t *testing.T) {
-	func() {
+	t.Run("no error", func(t *testing.T) {
+		expected := &config.Config{
+			"default": session.Session{Address: "", Password: "", Log: "rcon-default.log"},
+		}
+
 		cfg, err := config.ReadYamlConfig("rcon.yaml")
 		assert.NoError(t, err)
-		assert.Equal(t, newConfig(), &cfg)
-	}()
+		assert.Equal(t, expected, &cfg)
+	})
 
-	func() {
+	t.Run("not exist file", func(t *testing.T) {
+		var expected config.Config
+
 		cfg, err := config.ReadYamlConfig("nonexist.yaml")
 		assert.NotNil(t, err)
-		var expected config.Config
 		assert.Equal(t, expected, cfg)
-	}()
+	})
 }
 
 func TestAddLog(t *testing.T) {
@@ -48,22 +48,22 @@ func TestAddLog(t *testing.T) {
 	}()
 
 	// Test skip log. No logs is available.
-	func() {
-		err := AddLog("", address, command, result)
+	t.Run("skip log", func(t *testing.T) {
+		err := logger.AddLog("", address, command, result)
 		assert.NoError(t, err)
-	}()
+	})
 
-	// Test create file log.
-	func() {
-		err := AddLog(logName, address, command, result)
+	// Test create log file.
+	t.Run("create log file", func(t *testing.T) {
+		err := logger.AddLog(logName, address, command, result)
 		assert.NoError(t, err)
-	}()
+	})
 
 	// Test append to log file.
-	func() {
-		err := AddLog(logName, address, command, result)
+	t.Run("append to log file", func(t *testing.T) {
+		err := logger.AddLog(logName, address, command, result)
 		assert.NoError(t, err)
-	}()
+	})
 }
 
 func TestGetLogFile(t *testing.T) {
@@ -72,14 +72,14 @@ func TestGetLogFile(t *testing.T) {
 	logPath := logDir + "/" + logName
 
 	// Test empty log file name.
-	func() {
-		file, err := GetLogFile("")
+	t.Run("empty file name", func(t *testing.T) {
+		file, err := logger.GetLogFile("")
 		assert.Nil(t, file)
 		assert.EqualError(t, err, "empty file name")
-	}()
+	})
 
 	// Test stat permission denied.
-	func() {
+	t.Run("stat permission denied", func(t *testing.T) {
 		if err := os.Mkdir(logDir, 0400); err != nil {
 			assert.NoError(t, err)
 			return
@@ -89,13 +89,13 @@ func TestGetLogFile(t *testing.T) {
 			assert.NoError(t, err)
 		}()
 
-		file, err := GetLogFile(logPath)
+		file, err := logger.GetLogFile(logPath)
 		assert.Nil(t, file)
 		assert.EqualError(t, err, fmt.Sprintf("stat %s: permission denied", logPath))
-	}()
+	})
 
 	// Test create permission denied.
-	func() {
+	t.Run("open permission denied", func(t *testing.T) {
 		if err := os.Mkdir(logDir, 0500); err != nil {
 			assert.NoError(t, err)
 			return
@@ -105,13 +105,13 @@ func TestGetLogFile(t *testing.T) {
 			assert.NoError(t, err)
 		}()
 
-		file, err := GetLogFile(logPath)
+		file, err := logger.GetLogFile(logPath)
 		assert.Nil(t, file)
 		assert.EqualError(t, err, fmt.Sprintf("open %s: permission denied", logPath))
-	}()
+	})
 
 	// Positive test create new log file + test open permission denied.
-	func() {
+	t.Run("create new log file", func(t *testing.T) {
 		if err := os.Mkdir(logDir, 0700); err != nil {
 			assert.NoError(t, err)
 			return
@@ -122,7 +122,7 @@ func TestGetLogFile(t *testing.T) {
 		}()
 
 		// Positive test create new log file.
-		file, err := GetLogFile(logPath)
+		file, err := logger.GetLogFile(logPath)
 		assert.NotNil(t, file)
 		assert.NoError(t, err)
 
@@ -132,10 +132,10 @@ func TestGetLogFile(t *testing.T) {
 		}
 
 		// Test open permission denied.
-		file, err = GetLogFile(logPath)
+		file, err = logger.GetLogFile(logPath)
 		assert.Nil(t, file)
 		assert.EqualError(t, err, fmt.Sprintf("open %s: permission denied", logPath))
-	}()
+	})
 }
 
 func TestExecute(t *testing.T) {
@@ -154,54 +154,53 @@ func TestExecute(t *testing.T) {
 	w := &bytes.Buffer{}
 
 	// Test empty address.
-	func() {
+	t.Run("empty address", func(t *testing.T) {
 		err := Execute(w, session.Session{Address: "", Password: MockPassword}, MockCommandHelp)
 		assert.Error(t, err)
-	}()
+	})
 
 	// Test empty password.
-	func() {
+	t.Run("empty password", func(t *testing.T) {
 		err := Execute(w, session.Session{Address: server.Addr(), Password: ""}, MockCommandHelp)
 		assert.Error(t, err)
-	}()
+	})
 
 	// Test wrong password.
-	func() {
+	t.Run("wrong password", func(t *testing.T) {
 		err := Execute(w, session.Session{Address: server.Addr(), Password: "wrong"}, MockCommandHelp)
 		assert.Error(t, err)
-	}()
+	})
 
 	// Test empty command.
-	func() {
+	t.Run("empty command", func(t *testing.T) {
 		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword}, "")
 		assert.Error(t, err)
-	}()
+	})
 
 	// Test long command.
-	func() {
+	t.Run("long command", func(t *testing.T) {
 		bigCommand := make([]byte, 1001)
 		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword}, string(bigCommand))
 		assert.Error(t, err)
-	}()
+	})
 
 	// Positive test Execute func.
-	func() {
+	t.Run("no error", func(t *testing.T) {
 		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword}, MockCommandHelp)
 		assert.NoError(t, err)
-	}()
+	})
 
 	// Positive test Execute func with log.
-	func() {
-		LogFileName = "tmpfile.log"
+	t.Run("no error with log", func(t *testing.T) {
+		logFileName := "tmpfile.log"
 		defer func() {
-			err := os.Remove(LogFileName)
+			err := os.Remove(logFileName)
 			assert.NoError(t, err)
-			LogFileName = ""
 		}()
 
-		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword}, MockCommandHelp)
+		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword, Log: logFileName}, MockCommandHelp)
 		assert.NoError(t, err)
-	}()
+	})
 }
 
 func TestInteractive(t *testing.T) {
@@ -220,36 +219,36 @@ func TestInteractive(t *testing.T) {
 	w := &bytes.Buffer{}
 
 	// Test wrong password.
-	func() {
+	t.Run("wrong password", func(t *testing.T) {
 		var r bytes.Buffer
 		r.WriteString(CommandQuit + "\n")
 
 		err = Interactive(&r, w, session.Session{Address: server.Addr(), Password: "fake"})
 		assert.Error(t, err)
-	}()
+	})
 
 	// Test get Interactive address.
-	func() {
+	t.Run("interactive get address", func(t *testing.T) {
 		var r bytes.Buffer
 		r.WriteString(server.Addr() + "\n")
 		r.WriteString(CommandQuit + "\n")
 
 		err = Interactive(&r, w, session.Session{Address: "", Password: MockPassword})
 		assert.NoError(t, err)
-	}()
+	})
 
 	// Test get Interactive password.
-	func() {
+	t.Run("interactive get password", func(t *testing.T) {
 		var r bytes.Buffer
 		r.WriteString(MockPassword + "\n")
 		r.WriteString(CommandQuit + "\n")
 
 		err = Interactive(&r, w, session.Session{Address: server.Addr(), Password: ""})
 		assert.NoError(t, err)
-	}()
+	})
 
 	// Test get Interactive commands.
-	func() {
+	t.Run("interactive get commands", func(t *testing.T) {
 		r := &bytes.Buffer{}
 		r.WriteString(MockCommandHelp + "\n")
 		r.WriteString("unknown command" + "\n")
@@ -257,7 +256,7 @@ func TestInteractive(t *testing.T) {
 
 		err = Interactive(r, w, session.Session{Address: server.Addr(), Password: MockPassword})
 		assert.NoError(t, err)
-	}()
+	})
 }
 
 func TestNewApp(t *testing.T) {
@@ -274,7 +273,7 @@ func TestNewApp(t *testing.T) {
 	}()
 
 	// Test getting address and password from args. Config ang log are not used.
-	func() {
+	t.Run("getting address and password from args", func(t *testing.T) {
 		r := &bytes.Buffer{}
 		w := &bytes.Buffer{}
 
@@ -286,10 +285,10 @@ func TestNewApp(t *testing.T) {
 
 		err = app.Run(args)
 		assert.NoError(t, err)
-	}()
+	})
 
 	// Test getting address and password from config. Log is not used.
-	func() {
+	t.Run("getting address and password from args with log", func(t *testing.T) {
 		var configFileName = "rcon-temp.yaml"
 		err := CreateConfigFile(configFileName, server.Addr(), MockPassword)
 		assert.NoError(t, err)
@@ -308,10 +307,10 @@ func TestNewApp(t *testing.T) {
 
 		err = app.Run(args)
 		assert.NoError(t, err)
-	}()
+	})
 
 	// Test default config file not exist. Log is not used.
-	func() {
+	t.Run("default config file not exist", func(t *testing.T) {
 		r := &bytes.Buffer{}
 		w := &bytes.Buffer{}
 
@@ -324,10 +323,10 @@ func TestNewApp(t *testing.T) {
 		if !os.IsNotExist(err) {
 			t.Errorf("unexpected error: %v", err)
 		}
-	}()
+	})
 
 	// Test default config file is incorrect. Log is not used.
-	func() {
+	t.Run("default config file is incorrect", func(t *testing.T) {
 		var configFileName = "rcon-temp.yaml"
 		err := CreateInvalidConfigFile(configFileName, server.Addr(), MockPassword)
 		assert.NoError(t, err)
@@ -346,10 +345,10 @@ func TestNewApp(t *testing.T) {
 
 		err = app.Run(args)
 		assert.EqualError(t, err, "yaml: line 1: did not find expected key")
-	}()
+	})
 
 	// Test empty address and password. Log is not used.
-	func() {
+	t.Run("empty address and password", func(t *testing.T) {
 		r := &bytes.Buffer{}
 		w := &bytes.Buffer{}
 
@@ -361,10 +360,10 @@ func TestNewApp(t *testing.T) {
 
 		err = app.Run(args)
 		assert.EqualError(t, err, "address is not set: to set address add -a host:port")
-	}()
+	})
 
 	// Test empty password. Log is not used.
-	func() {
+	t.Run("empty password", func(t *testing.T) {
 		r := &bytes.Buffer{}
 		w := &bytes.Buffer{}
 
@@ -377,10 +376,10 @@ func TestNewApp(t *testing.T) {
 
 		err = app.Run(args)
 		assert.EqualError(t, err, "password is not set: to set password add -p password")
-	}()
+	})
 
 	// Positive test Interactive. Log is not used.
-	func() {
+	t.Run("no error", func(t *testing.T) {
 		r := &bytes.Buffer{}
 		w := &bytes.Buffer{}
 
@@ -394,14 +393,17 @@ func TestNewApp(t *testing.T) {
 
 		err = app.Run(args)
 		assert.NoError(t, err)
-	}()
+	})
 }
+
+// DefaultTestLogName sets the default log file name.
+const DefaultTestLogName = "rcon-default.log"
 
 // CreateConfigFile creates config file with default section.
 func CreateConfigFile(name string, address string, password string) error {
 	var stringBody = fmt.Sprintf(
 		"%s:\n  address: \"%s\"\n  password: \"%s\"\n  log: \"%s\"",
-		DefaultConfigEnv, address, password, DefaultLogName,
+		config.DefaultConfigEnv, address, password, DefaultTestLogName,
 	)
 	file, err := os.Create(name)
 	if err != nil {
@@ -416,7 +418,7 @@ func CreateConfigFile(name string, address string, password string) error {
 func CreateInvalidConfigFile(name string, address string, password string) error {
 	var stringBody = fmt.Sprintf(
 		"address: \"%s\"\n  password: \"%s\"\n  log: \"%s\"",
-		address, password, DefaultLogName,
+		address, password, DefaultTestLogName,
 	)
 	file, err := os.Create(name)
 	if err != nil {

@@ -14,6 +14,8 @@ const DefaultProtocol = ProtocolRCON
 type Session struct {
 	Address  string `json:"address" yaml:"address"`
 	Password string `json:"password" yaml:"password"`
-	Log      string `json:"log" yaml:"log"`
-	Type     string `json:"type" yaml:"type"`
+	// Log is the name of the file to which requests will be logged.
+	// If not specified, no logging will be performed.
+	Log  string `json:"log" yaml:"log"`
+	Type string `json:"type" yaml:"type"`
 }

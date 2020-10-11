@@ -6,42 +6,17 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
-	"time"
 
 	"github.com/gorcon/rcon-cli/internal/config"
+	"github.com/gorcon/rcon-cli/internal/logger"
 	"github.com/gorcon/rcon-cli/internal/proto/rcon"
 	"github.com/gorcon/rcon-cli/internal/proto/telnet"
 	"github.com/gorcon/rcon-cli/internal/session"
 	"github.com/urfave/cli"
 )
 
-// Defaults.
-const (
-	// DefaultConfigName sets the default config file name.
-	DefaultConfigName = "rcon.yaml"
-
-	// DefaultConfigEnv is the name of the environment, which is taken
-	// as default unless another value is passed.
-	DefaultConfigEnv = "default"
-
-	// DefaultLogName sets the default log file name.
-	DefaultLogName = "rcon-default.log"
-)
-
 // CommandQuit is the command for exit from Interactive mode.
 const CommandQuit = ":q"
-
-// LogRecordTimeLayout is layout for convert time.Now to String.
-const LogRecordTimeLayout = "2006-01-02 15:04:05"
-
-// LogRecordFormat is format to log line record.
-const LogRecordFormat = "[%s] %s: %s\n%s\n\n"
-
-// LogFileName is the name of the file to which requests will be logged.
-// If not specified, no logging will be performed.
-// TODO: replace global LogFileName to better implementation.
-var LogFileName string
 
 // Version displays service version in semantic versioning (http://semver.org/).
 // Can be replaced while compiling with flag `-ldflags "-X main.Version=${VERSION}"`.
@@ -68,12 +43,12 @@ func NewApp(r io.Reader, w io.Writer) *cli.App {
 		cli.StringFlag{
 			Name: "a, address",
 			Usage: "Set host and port to remote server. Example 127.0.0.1:16260" +
-				"\n                              can be set in the config file " + DefaultConfigName + ".",
+				"\n                              can be set in the config file " + config.DefaultConfigName + ".",
 		},
 		cli.StringFlag{
 			Name: "p, password",
 			Usage: "Set password to remote server" +
-				"\n                               can be set in the config file " + DefaultConfigName + ".",
+				"\n                               can be set in the config file " + config.DefaultConfigName + ".",
 		},
 		cli.StringFlag{
 			Name:  "c, command",
@@ -91,7 +66,7 @@ func NewApp(r io.Reader, w io.Writer) *cli.App {
 		cli.StringFlag{
 			Name: "cfg",
 			Usage: "Allows to specify the path and name of the configuration file. The default" +
-				"\n                value is " + DefaultConfigName + ".",
+				"\n                value is " + config.DefaultConfigName + ".",
 		},
 		cli.StringFlag{
 			Name:  "t, type",
@@ -147,7 +122,7 @@ func Execute(w io.Writer, ses session.Session, command string) error {
 		return err
 	}
 
-	if err := AddLog(LogFileName, ses.Address, command, result); err != nil {
+	if err := logger.AddLog(ses.Log, ses.Address, command, result); err != nil {
 		return fmt.Errorf("log error: %s", err)
 	}
 
@@ -204,35 +179,34 @@ func Interactive(r io.Reader, w io.Writer, ses session.Session) error {
 func GetCredentials(c *cli.Context) (ses session.Session, err error) {
 	ses.Address = c.GlobalString("a")
 	ses.Password = c.GlobalString("p")
-	LogFileName = c.GlobalString("l")
+	ses.Log = c.GlobalString("l")
 	ses.Type = c.GlobalString("t")
 
 	if ses.Address != "" && ses.Password != "" {
 		return ses, nil
 	}
 
-	cfg, err := GetConfig(c)
+	cfg, err := config.GetConfig(c.GlobalString("cfg"))
 	if err != nil {
 		return ses, err
 	}
 
 	e := c.GlobalString("e")
 	if e == "" {
-		e = DefaultConfigEnv
+		e = config.DefaultConfigEnv
 	}
 
-	// Get address from environment in config if -a flag is not defined.
+	// Get variables from config environment if flags are not defined.
 	if ses.Address == "" {
 		ses.Address = (*cfg)[e].Address
 	}
 
-	// Get password from environment in config if -p flag is not defined.
 	if ses.Password == "" {
 		ses.Password = (*cfg)[e].Password
 	}
 
-	if LogFileName == "" {
-		LogFileName = (*cfg)[e].Log
+	if ses.Log == "" {
+		ses.Log = (*cfg)[e].Log
 	}
 
 	if ses.Type == "" {
@@ -240,84 +214,4 @@ func GetCredentials(c *cli.Context) (ses session.Session, err error) {
 	}
 
 	return ses, err
-}
-
-// GetConfig finds and parses config file for details of connecting to
-// a remote server.
-func GetConfig(c *cli.Context) (*config.Config, error) {
-	path := c.GlobalString("cfg")
-	if path == "" {
-		home, err := filepath.Abs(filepath.Dir(os.Args[0]))
-		if err != nil {
-			return nil, err
-		}
-
-		path = home + "/" + DefaultConfigName
-		if _, err := os.Stat(path); err != nil {
-			return nil, err
-		}
-	}
-
-	// Read the config file if file exists.
-	if _, err := os.Stat(path); err != nil {
-		return nil, err
-	}
-
-	cfg, err := config.ReadYamlConfig(path)
-	if err != nil {
-		return nil, err
-	}
-
-	return &cfg, nil
-}
-
-// AddLog saves request and response to log file.
-func AddLog(logName string, address string, request string, response string) error {
-	// Disable logging if log file name is empty.
-	if logName == "" {
-		return nil
-	}
-
-	file, err := GetLogFile(logName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	line := fmt.Sprintf(LogRecordFormat, time.Now().Format(LogRecordTimeLayout), address, request, response)
-	if _, err := file.WriteString(line); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// GetLogFile opens file for append strings. Creates file if file not exist.
-func GetLogFile(logName string) (*os.File, error) {
-	if logName == "" {
-		return nil, errors.New("empty file name")
-	}
-
-	var file *os.File
-
-	_, err := os.Stat(logName)
-
-	switch {
-	case err == nil:
-		// Open current file.
-		file, err = os.OpenFile(logName, os.O_APPEND|os.O_WRONLY, 0777)
-		if err != nil {
-			return nil, err
-		}
-	case os.IsNotExist(err):
-		// Create new file.
-		file, err = os.Create(logName)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, err
-	}
-
-	return file, nil
 }
