@@ -1,4 +1,5 @@
 # rcon-cli
+[![golangci-lint](https://github.com/gorcon/rcon-cli/workflows/golangci-lint/badge.svg)](https://github.com/gorcon/rcon-cli/workflows/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gorcon/rcon-cli)](https://goreportcard.com/report/github.com/gorcon/rcon-cli)
 [![Build Status](https://travis-ci.org/gorcon/rcon-cli.svg?branch=master)](https://travis-ci.org/gorcon/rcon-cli)
 [![top level coverage](https://gocover.io/_badge/github.com/gorcon/rcon-cli?0)](https://gocover.io/github.com/gorcon/rcon-cli)
