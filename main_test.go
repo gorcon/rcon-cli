@@ -139,14 +139,26 @@ func TestGetLogFile(t *testing.T) {
 }
 
 func TestExecute(t *testing.T) {
-	server, err := NewMockServer()
+	serverRCON, err := NewMockServerRCON()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
-		assert.NoError(t, server.Close())
-		close(server.errors)
-		for err := range server.errors {
+		assert.NoError(t, serverRCON.Close())
+		close(serverRCON.errors)
+		for err := range serverRCON.errors {
+			assert.NoError(t, err)
+		}
+	}()
+
+	serverTELNET, err := NewMockServerTELNET()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		assert.NoError(t, serverTELNET.Close())
+		close(serverTELNET.errors)
+		for err := range serverTELNET.errors {
 			assert.NoError(t, err)
 		}
 	}()
@@ -161,32 +173,38 @@ func TestExecute(t *testing.T) {
 
 	// Test empty password.
 	t.Run("empty password", func(t *testing.T) {
-		err := Execute(w, session.Session{Address: server.Addr(), Password: ""}, MockCommandHelpRCON)
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: ""}, MockCommandHelpRCON)
 		assert.Error(t, err)
 	})
 
 	// Test wrong password.
 	t.Run("wrong password", func(t *testing.T) {
-		err := Execute(w, session.Session{Address: server.Addr(), Password: "wrong"}, MockCommandHelpRCON)
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: "wrong"}, MockCommandHelpRCON)
 		assert.Error(t, err)
 	})
 
 	// Test empty command.
 	t.Run("empty command", func(t *testing.T) {
-		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPasswordRCON}, "")
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON}, "")
 		assert.Error(t, err)
 	})
 
 	// Test long command.
 	t.Run("long command", func(t *testing.T) {
 		bigCommand := make([]byte, 1001)
-		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPasswordRCON}, string(bigCommand))
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON}, string(bigCommand))
 		assert.Error(t, err)
 	})
 
-	// Positive test Execute func.
-	t.Run("no error", func(t *testing.T) {
-		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPasswordRCON}, MockCommandHelpRCON)
+	// Positive RCON test Execute func.
+	t.Run("no error rcon", func(t *testing.T) {
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON}, MockCommandHelpRCON)
+		assert.NoError(t, err)
+	})
+
+	// Positive TELNET test Execute func.
+	t.Run("no error telnet", func(t *testing.T) {
+		err := Execute(w, session.Session{Address: serverTELNET.Addr(), Password: MockPasswordTELNET, Type: "telnet"}, MockCommandHelpTELNET)
 		assert.NoError(t, err)
 	})
 
@@ -198,13 +216,13 @@ func TestExecute(t *testing.T) {
 			assert.NoError(t, err)
 		}()
 
-		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPasswordRCON, Log: logFileName}, MockCommandHelpRCON)
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON, Log: logFileName}, MockCommandHelpRCON)
 		assert.NoError(t, err)
 	})
 }
 
 func TestInteractive(t *testing.T) {
-	server, err := NewMockServer()
+	server, err := NewMockServerRCON()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,8 +265,8 @@ func TestInteractive(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	// Test get Interactive commands.
-	t.Run("interactive get commands", func(t *testing.T) {
+	// Test get Interactive commands RCON.
+	t.Run("interactive get commands rcon", func(t *testing.T) {
 		r := &bytes.Buffer{}
 		r.WriteString(MockCommandHelpRCON + "\n")
 		r.WriteString("unknown command" + "\n")
@@ -257,10 +275,21 @@ func TestInteractive(t *testing.T) {
 		err = Interactive(r, w, session.Session{Address: server.Addr(), Password: MockPasswordRCON})
 		assert.NoError(t, err)
 	})
+
+	// Test get Interactive commands TELNET.
+	t.Run("interactive get commands telnet", func(t *testing.T) {
+		r := &bytes.Buffer{}
+		r.WriteString(MockCommandHelpTELNET + "\n")
+		r.WriteString("unknown command" + "\n")
+		r.WriteString(CommandQuit + "\n")
+
+		err = Interactive(r, w, session.Session{Address: server.Addr(), Password: MockPasswordTELNET, Type: "telnet"})
+		assert.NoError(t, err)
+	})
 }
 
 func TestNewApp(t *testing.T) {
-	server, err := NewMockServer()
+	server, err := NewMockServerRCON()
 	if err != nil {
 		t.Fatal(err)
 	}

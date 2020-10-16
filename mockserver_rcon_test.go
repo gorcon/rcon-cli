@@ -28,8 +28,8 @@ type MockServerRCON struct {
 	quit        chan bool
 }
 
-// NewMockServer returns a running MockServer or nil if an error occurred.
-func NewMockServer() (*MockServerRCON, error) {
+// NewMockServerRCON returns a running MockServer or nil if an error occurred.
+func NewMockServerRCON() (*MockServerRCON, error) {
 	listener, err := net.Listen("tcp", MockAddressRCON)
 	if err != nil {
 		return nil, err
@@ -90,6 +90,7 @@ func (s *MockServerRCON) serve() {
 			if s.isRunning() {
 				s.reportError(fmt.Errorf("serve error: %s", err))
 			}
+
 			return
 		}
 
