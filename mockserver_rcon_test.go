@@ -10,15 +10,15 @@ import (
 )
 
 const (
-	MockAddress  = "127.0.0.1:0"
-	MockPassword = "password"
+	MockAddressRCON  = "127.0.0.1:0"
+	MockPasswordRCON = "password"
 
-	MockCommandHelp         = "help"
-	MockCommandHelpResponse = "lorem ipsum dolor sit amet"
+	MockCommandHelpRCON         = "help"
+	MockCommandHelpResponseRCON = "lorem ipsum dolor sit amet"
 )
 
-// MockServer is a mock Source RCON Protocol server.
-type MockServer struct {
+// MockServerRCON is a mock Source RCON Protocol server.
+type MockServerRCON struct {
 	addr        string
 	listener    net.Listener
 	connections map[net.Conn]struct{}
@@ -29,13 +29,13 @@ type MockServer struct {
 }
 
 // NewMockServer returns a running MockServer or nil if an error occurred.
-func NewMockServer() (*MockServer, error) {
-	listener, err := net.Listen("tcp", MockAddress)
+func NewMockServer() (*MockServerRCON, error) {
+	listener, err := net.Listen("tcp", MockAddressRCON)
 	if err != nil {
 		return nil, err
 	}
 
-	server := &MockServer{
+	server := &MockServerRCON{
 		listener:    listener,
 		connections: make(map[net.Conn]struct{}),
 		errors:      make(chan error, 10),
@@ -50,7 +50,7 @@ func NewMockServer() (*MockServer, error) {
 }
 
 // Close shuts down the MockServer.
-func (s *MockServer) Close() error {
+func (s *MockServerRCON) Close() error {
 	close(s.quit)
 
 	err := s.listener.Close()
@@ -76,12 +76,12 @@ func (s *MockServer) Close() error {
 }
 
 // Addr returns IPv4 string MockServer address.
-func (s *MockServer) Addr() string {
+func (s *MockServerRCON) Addr() string {
 	return s.addr
 }
 
 // serve handles incoming requests until a stop signal is given with Close.
-func (s *MockServer) serve() {
+func (s *MockServerRCON) serve() {
 	defer s.wg.Done()
 
 	for {
@@ -99,7 +99,7 @@ func (s *MockServer) serve() {
 }
 
 // handle handles incoming client conn.
-func (s *MockServer) handle(conn net.Conn) {
+func (s *MockServerRCON) handle(conn net.Conn) {
 	s.mu.Lock()
 	s.connections[conn] = struct{}{}
 	s.mu.Unlock()
@@ -127,15 +127,15 @@ func (s *MockServer) handle(conn net.Conn) {
 		switch request.Type {
 		case rcon.SERVERDATA_AUTH:
 			responseType = rcon.SERVERDATA_AUTH_RESPONSE
-			if request.Body() != MockPassword {
+			if request.Body() != MockPasswordRCON {
 				// If authentication was failed, the ID must be assigned to -1.
 				responseID = -1
 				responseBody = string([]byte{0x00})
 			}
 		case rcon.SERVERDATA_EXECCOMMAND:
 			switch request.Body() {
-			case MockCommandHelp:
-				responseBody = MockCommandHelpResponse
+			case MockCommandHelpRCON:
+				responseBody = MockCommandHelpResponseRCON
 			default:
 				responseBody = "unknown command"
 			}
@@ -150,7 +150,7 @@ func (s *MockServer) handle(conn net.Conn) {
 }
 
 // isRunning returns true if MockServer is running and false if is not.
-func (s *MockServer) isRunning() bool {
+func (s *MockServerRCON) isRunning() bool {
 	select {
 	case <-s.quit:
 		return false
@@ -160,7 +160,7 @@ func (s *MockServer) isRunning() bool {
 }
 
 // write writes packets to conn. Replaces packets ids to mirrored id from request.
-func (s *MockServer) write(conn net.Conn, id int32, packets ...*rcon.Packet) error {
+func (s *MockServerRCON) write(conn net.Conn, id int32, packets ...*rcon.Packet) error {
 	for _, packet := range packets {
 		packet.ID = id
 		_, err := packet.WriteTo(conn)
@@ -173,7 +173,7 @@ func (s *MockServer) write(conn net.Conn, id int32, packets ...*rcon.Packet) err
 }
 
 // closeConnection closes a client conn and removes it from connections map.
-func (s *MockServer) closeConnection(conn net.Conn) {
+func (s *MockServerRCON) closeConnection(conn net.Conn) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -184,7 +184,7 @@ func (s *MockServer) closeConnection(conn net.Conn) {
 }
 
 // reportError writes error to errors channel.
-func (s *MockServer) reportError(err error) bool {
+func (s *MockServerRCON) reportError(err error) bool {
 	if err == nil {
 		return false
 	}

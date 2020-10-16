@@ -155,38 +155,38 @@ func TestExecute(t *testing.T) {
 
 	// Test empty address.
 	t.Run("empty address", func(t *testing.T) {
-		err := Execute(w, session.Session{Address: "", Password: MockPassword}, MockCommandHelp)
+		err := Execute(w, session.Session{Address: "", Password: MockPasswordRCON}, MockCommandHelpRCON)
 		assert.Error(t, err)
 	})
 
 	// Test empty password.
 	t.Run("empty password", func(t *testing.T) {
-		err := Execute(w, session.Session{Address: server.Addr(), Password: ""}, MockCommandHelp)
+		err := Execute(w, session.Session{Address: server.Addr(), Password: ""}, MockCommandHelpRCON)
 		assert.Error(t, err)
 	})
 
 	// Test wrong password.
 	t.Run("wrong password", func(t *testing.T) {
-		err := Execute(w, session.Session{Address: server.Addr(), Password: "wrong"}, MockCommandHelp)
+		err := Execute(w, session.Session{Address: server.Addr(), Password: "wrong"}, MockCommandHelpRCON)
 		assert.Error(t, err)
 	})
 
 	// Test empty command.
 	t.Run("empty command", func(t *testing.T) {
-		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword}, "")
+		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPasswordRCON}, "")
 		assert.Error(t, err)
 	})
 
 	// Test long command.
 	t.Run("long command", func(t *testing.T) {
 		bigCommand := make([]byte, 1001)
-		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword}, string(bigCommand))
+		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPasswordRCON}, string(bigCommand))
 		assert.Error(t, err)
 	})
 
 	// Positive test Execute func.
 	t.Run("no error", func(t *testing.T) {
-		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword}, MockCommandHelp)
+		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPasswordRCON}, MockCommandHelpRCON)
 		assert.NoError(t, err)
 	})
 
@@ -198,7 +198,7 @@ func TestExecute(t *testing.T) {
 			assert.NoError(t, err)
 		}()
 
-		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPassword, Log: logFileName}, MockCommandHelp)
+		err := Execute(w, session.Session{Address: server.Addr(), Password: MockPasswordRCON, Log: logFileName}, MockCommandHelpRCON)
 		assert.NoError(t, err)
 	})
 }
@@ -233,14 +233,14 @@ func TestInteractive(t *testing.T) {
 		r.WriteString(server.Addr() + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err = Interactive(&r, w, session.Session{Address: "", Password: MockPassword})
+		err = Interactive(&r, w, session.Session{Address: "", Password: MockPasswordRCON})
 		assert.NoError(t, err)
 	})
 
 	// Test get Interactive password.
 	t.Run("interactive get password", func(t *testing.T) {
 		var r bytes.Buffer
-		r.WriteString(MockPassword + "\n")
+		r.WriteString(MockPasswordRCON + "\n")
 		r.WriteString(CommandQuit + "\n")
 
 		err = Interactive(&r, w, session.Session{Address: server.Addr(), Password: ""})
@@ -250,11 +250,11 @@ func TestInteractive(t *testing.T) {
 	// Test get Interactive commands.
 	t.Run("interactive get commands", func(t *testing.T) {
 		r := &bytes.Buffer{}
-		r.WriteString(MockCommandHelp + "\n")
+		r.WriteString(MockCommandHelpRCON + "\n")
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err = Interactive(r, w, session.Session{Address: server.Addr(), Password: MockPassword})
+		err = Interactive(r, w, session.Session{Address: server.Addr(), Password: MockPasswordRCON})
 		assert.NoError(t, err)
 	})
 }
@@ -280,8 +280,8 @@ func TestNewApp(t *testing.T) {
 		app := NewApp(r, w)
 		args := os.Args[0:1]
 		args = append(args, "-a="+server.Addr())
-		args = append(args, "-p="+MockPassword)
-		args = append(args, "-c="+MockCommandHelp)
+		args = append(args, "-p="+MockPasswordRCON)
+		args = append(args, "-c="+MockCommandHelpRCON)
 
 		err = app.Run(args)
 		assert.NoError(t, err)
@@ -290,7 +290,7 @@ func TestNewApp(t *testing.T) {
 	// Test getting address and password from config. Log is not used.
 	t.Run("getting address and password from args with log", func(t *testing.T) {
 		var configFileName = "rcon-temp.yaml"
-		err := CreateConfigFile(configFileName, server.Addr(), MockPassword)
+		err := CreateConfigFile(configFileName, server.Addr(), MockPasswordRCON)
 		assert.NoError(t, err)
 		defer func() {
 			err := os.Remove(configFileName)
@@ -303,7 +303,7 @@ func TestNewApp(t *testing.T) {
 		app := NewApp(r, w)
 		args := os.Args[0:1]
 		args = append(args, "-cfg="+configFileName)
-		args = append(args, "-c="+MockCommandHelp)
+		args = append(args, "-c="+MockCommandHelpRCON)
 
 		err = app.Run(args)
 		assert.NoError(t, err)
@@ -316,7 +316,7 @@ func TestNewApp(t *testing.T) {
 
 		app := NewApp(r, w)
 		args := os.Args[0:1]
-		args = append(args, "-c="+MockCommandHelp)
+		args = append(args, "-c="+MockCommandHelpRCON)
 
 		err = app.Run(args)
 		assert.Error(t, err)
@@ -328,7 +328,7 @@ func TestNewApp(t *testing.T) {
 	// Test default config file is incorrect. Log is not used.
 	t.Run("default config file is incorrect", func(t *testing.T) {
 		var configFileName = "rcon-temp.yaml"
-		err := CreateInvalidConfigFile(configFileName, server.Addr(), MockPassword)
+		err := CreateInvalidConfigFile(configFileName, server.Addr(), MockPasswordRCON)
 		assert.NoError(t, err)
 		defer func() {
 			err := os.Remove(configFileName)
@@ -341,7 +341,7 @@ func TestNewApp(t *testing.T) {
 		app := NewApp(r, w)
 		args := os.Args[0:1]
 		args = append(args, "-cfg="+configFileName)
-		args = append(args, "-c="+MockCommandHelp)
+		args = append(args, "-c="+MockCommandHelpRCON)
 
 		err = app.Run(args)
 		assert.EqualError(t, err, "yaml: line 1: did not find expected key")
@@ -356,7 +356,7 @@ func TestNewApp(t *testing.T) {
 		args := os.Args[0:1]
 		// Hack to use os.Args[0] in go run
 		args[0] = ""
-		args = append(args, "-c="+MockCommandHelp)
+		args = append(args, "-c="+MockCommandHelpRCON)
 
 		err = app.Run(args)
 		assert.EqualError(t, err, "address is not set: to set address add -a host:port")
@@ -372,7 +372,7 @@ func TestNewApp(t *testing.T) {
 		// Hack to use os.Args[0] in go run
 		args[0] = ""
 		args = append(args, "-a="+server.Addr())
-		args = append(args, "-c="+MockCommandHelp)
+		args = append(args, "-c="+MockCommandHelpRCON)
 
 		err = app.Run(args)
 		assert.EqualError(t, err, "password is not set: to set password add -p password")
@@ -386,9 +386,9 @@ func TestNewApp(t *testing.T) {
 		app := NewApp(r, w)
 		args := os.Args[0:1]
 		args = append(args, "-a="+server.Addr())
-		args = append(args, "-p="+MockPassword)
+		args = append(args, "-p="+MockPasswordRCON)
 
-		r.WriteString(MockCommandHelp + "\n")
+		r.WriteString(MockCommandHelpRCON + "\n")
 		r.WriteString(CommandQuit + "\n")
 
 		err = app.Run(args)
