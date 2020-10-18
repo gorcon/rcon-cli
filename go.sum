@@ -3,8 +3,8 @@ github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d h1:U+s90UTSY
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/gorcon/rcon v1.2.1 h1:zxclHuZS6mBwx4f2x9XwLDwLCQT+yx4/9bnOz6MmCog=
-github.com/gorcon/rcon v1.2.1/go.mod h1:tR1u9kJLW1lKzOMLl9VpXT/JYN4efFtD3fSmmwSpOHc=
+github.com/gorcon/rcon v1.2.2 h1:JpoH+7zR3AS1IqKCQbUTVL/lfo+1rsLrT2vnR/lq8cw=
+github.com/gorcon/rcon v1.2.2/go.mod h1:tR1u9kJLW1lKzOMLl9VpXT/JYN4efFtD3fSmmwSpOHc=
 github.com/gorcon/telnet v1.0.0 h1:xSIE21WAVGwmL/gxrnLYg0kD9j1ZKR7ouPSyHBJPDDU=
 github.com/gorcon/telnet v1.0.0/go.mod h1:KwU1iCwOxpp/G52AfvVsMxdSEA475k9tt9hMzQSx8Lc=
 github.com/gorcon/websocket v0.0.0-20201018062253-6b5ba482cf6d h1:027q3T+WHRgu1ksxjDCn2wH9et+SFrTS9r6q/JKVv28=
