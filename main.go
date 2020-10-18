@@ -143,8 +143,6 @@ func Interactive(r io.Reader, w io.Writer, ses session.Session) error {
 	switch ses.Type {
 	case session.ProtocolTELNET:
 		return telnet.Interactive(r, w, ses.Address, ses.Password)
-	case session.ProtocolWebRCON:
-		return errors.New("not implemented")
 	default:
 		// Default type is RCON.
 		if ses.Password == "" {
@@ -152,7 +150,7 @@ func Interactive(r io.Reader, w io.Writer, ses session.Session) error {
 			fmt.Fscanln(r, &ses.Password)
 		}
 
-		if err := rcon.CheckCredentials(ses.Address, ses.Password); err != nil {
+		if err := CheckCredentials(ses); err != nil {
 			return err
 		}
 
@@ -219,4 +217,14 @@ func GetCredentials(c *cli.Context) (ses session.Session, err error) {
 	}
 
 	return ses, err
+}
+
+// CheckCredentials sends auth request for remote server. Returns en error if
+// address or password is incorrect.
+func CheckCredentials(ses session.Session) error {
+	if ses.Type == session.ProtocolWebRCON {
+		return websocket.CheckCredentials(ses.Address, ses.Password)
+	}
+
+	return rcon.CheckCredentials(ses.Address, ses.Password)
 }
