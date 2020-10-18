@@ -4,8 +4,13 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+
+## [v0.8.0-beta.2] - 2020-10-18
 ### Added
-- Added interactive mode for Web RCON.
+- Added interactive mode for Web RCON #12.
+
+### Fixed
+- Fixed response for another request for Rust server #13.
 
 ## [v0.8.0-beta] - 2020-10-18
 ### Added
@@ -64,7 +69,8 @@ than entry in configuration file.
 ### Added
 - Initial implementation.
 
-[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.8.0-beta...HEAD
+[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.8.0-beta.2...HEAD
+[v0.8.0-beta.2]: https://github.com/gorcon/rcon-cli/compare/v0.8.0-beta...v0.8.0-beta.2
 [v0.8.0-beta]: https://github.com/gorcon/rcon-cli/compare/v0.7.0...v0.8.0-beta
 [v0.7.0]: https://github.com/gorcon/rcon-cli/compare/v0.6.0...v0.7.0
 [v0.6.0]: https://github.com/gorcon/rcon-cli/compare/0.5.0...v0.6.0
