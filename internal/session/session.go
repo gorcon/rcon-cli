@@ -2,8 +2,9 @@ package session
 
 // Allowed protocols.
 const (
-	ProtocolRCON   = "rcon"
-	ProtocolTELNET = "telnet"
+	ProtocolRCON    = "rcon"
+	ProtocolTELNET  = "telnet"
+	ProtocolWebRCON = "web"
 )
 
 // DefaultProtocol contains the default protocol for connecting to a

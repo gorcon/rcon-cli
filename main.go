@@ -11,6 +11,7 @@ import (
 	"github.com/gorcon/rcon-cli/internal/logger"
 	"github.com/gorcon/rcon-cli/internal/proto/rcon"
 	"github.com/gorcon/rcon-cli/internal/proto/telnet"
+	"github.com/gorcon/rcon-cli/internal/proto/websocket"
 	"github.com/gorcon/rcon-cli/internal/session"
 	"github.com/urfave/cli"
 )
@@ -110,6 +111,8 @@ func Execute(w io.Writer, ses session.Session, command string) error {
 	switch ses.Type {
 	case session.ProtocolTELNET:
 		result, err = telnet.Execute(ses.Address, ses.Password, command)
+	case session.ProtocolWebRCON:
+		result, err = websocket.Execute(ses.Address, ses.Password, command)
 	default:
 		result, err = rcon.Execute(ses.Address, ses.Password, command)
 	}
@@ -140,6 +143,8 @@ func Interactive(r io.Reader, w io.Writer, ses session.Session) error {
 	switch ses.Type {
 	case session.ProtocolTELNET:
 		return telnet.Interactive(r, w, ses.Address, ses.Password)
+	case session.ProtocolWebRCON:
+		return errors.New("not implemented")
 	default:
 		// Default type is RCON.
 		if ses.Password == "" {

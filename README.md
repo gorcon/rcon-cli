@@ -11,7 +11,7 @@ CLI for executing queries on a remote [Source dedicated game server](https://dev
 
 * [Project Zomboid](https://store.steampowered.com/app/108600) 
 * [Conan Exiles](https://store.steampowered.com/app/440900)
-* [Rust](https://store.steampowered.com/app/252490) (add +rcon.web 0 to the args when starting the server)
+* [Rust](https://store.steampowered.com/app/252490) (add `+rcon.web 0` to the args when starting the server or add `-t web` to `rcon-cli` args)
 * [ARK: Survival Evolved](https://store.steampowered.com/app/346110)
 * [7 Days to Die](https://store.steampowered.com/app/251570)
 
@@ -115,9 +115,14 @@ You can use `-l` argument to specify path to log file.
      ./rcon -l /path/to/file.log
 
 Since from `rcon-cli` 0.7.0 version support for the TELNET protocol has been added. On this protocol remote access to 
-the 7 Days to Die console is based. You can use `-t` argument to specify the protocol type.
+the 7 Days to Die console is based. You can use `-t telnet` argument to specify the protocol type.
 
-     ./rcon -a 172.19.0.2:8081 -p banana -t telnet -c version
+     ./rcon -a 172.19.0.2:8081 -p password -t telnet -c version
+     
+Since from `rcon-cli` 0.8.0 version support for the Web RCON protocol has been added. On this protocol remote access to 
+the Rust console is based. You can use `-t web` argument to specify the protocol type.
+
+     ./rcon -a 127.0.0.1:28016 -p password -t veb -c status
 
 ## Contribute
 

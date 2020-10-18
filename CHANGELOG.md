@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+### Added
+- Added Rust support #5. Add `-t web` argument when execute `rcon` cli.
+
 ### Changed
 - Code and tests refactoring.
 
