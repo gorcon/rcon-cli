@@ -13,7 +13,7 @@ CLI for executing queries on a remote [Source dedicated game server](https://dev
 * [Conan Exiles](https://store.steampowered.com/app/440900)
 * [Rust](https://store.steampowered.com/app/252490) (add `+rcon.web 0` to the args when starting the server or add `-t web` to `rcon-cli` args)
 * [ARK: Survival Evolved](https://store.steampowered.com/app/346110)
-* [7 Days to Die](https://store.steampowered.com/app/251570)
+* [7 Days to Die](https://store.steampowered.com/app/251570) (add `-t telnet` to rcon-cli args)
 
 Open pull request if you have successfully used a package with another game with rcon support and add it to the list.
 
