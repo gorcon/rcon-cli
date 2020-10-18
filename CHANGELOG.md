@@ -4,8 +4,10 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+
+## [v0.8.0-beta] - 2020-10-18
 ### Added
-- Added Rust support #5. Add `-t web` argument when execute `rcon` cli.
+- Added Rust Web RCON support #8. Add `-t web` argument when execute `rcon` cli.
 
 ### Changed
 - Code and tests refactoring.
@@ -60,7 +62,8 @@ than entry in configuration file.
 ### Added
 - Initial implementation.
 
-[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.8.0-beta...HEAD
+[v0.8.0-beta]: https://github.com/gorcon/rcon-cli/compare/0.7.0...v0.8.0-beta
 [v0.7.0]: https://github.com/gorcon/rcon-cli/compare/0.6.0...v0.7.0
 [v0.6.0]: https://github.com/gorcon/rcon-cli/compare/0.5.0...v0.6.0
 [v0.5.0]: https://github.com/gorcon/rcon-cli/compare/v0.4.0...0.5.0
