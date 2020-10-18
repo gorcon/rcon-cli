@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
-- Added interactive mod for Web RCON.
+- Added interactive mode for Web RCON.
 
 ## [v0.8.0-beta] - 2020-10-18
 ### Added
