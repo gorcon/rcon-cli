@@ -63,8 +63,8 @@ than entry in configuration file.
 - Initial implementation.
 
 [Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.8.0-beta...HEAD
-[v0.8.0-beta]: https://github.com/gorcon/rcon-cli/compare/0.7.0...v0.8.0-beta
-[v0.7.0]: https://github.com/gorcon/rcon-cli/compare/0.6.0...v0.7.0
+[v0.8.0-beta]: https://github.com/gorcon/rcon-cli/compare/v0.7.0...v0.8.0-beta
+[v0.7.0]: https://github.com/gorcon/rcon-cli/compare/v0.6.0...v0.7.0
 [v0.6.0]: https://github.com/gorcon/rcon-cli/compare/0.5.0...v0.6.0
 [v0.5.0]: https://github.com/gorcon/rcon-cli/compare/v0.4.0...0.5.0
 [v0.4.0]: https://github.com/gorcon/rcon-cli/compare/v0.3.0...v0.4.0
