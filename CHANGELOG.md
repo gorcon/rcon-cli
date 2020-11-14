@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+### Added
+- Added tests for real servers Rust and Project Zomboid.  
 
 ## [v0.8.0-beta.2] - 2020-10-18
 ### Added

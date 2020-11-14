@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/gorcon/rcon-cli/internal/session"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // DefaultConfigName sets the default config file name.
