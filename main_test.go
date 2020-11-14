@@ -2,8 +2,8 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -164,34 +164,45 @@ func TestExecute(t *testing.T) {
 		}
 	}()
 
-	w := &bytes.Buffer{}
+	serverWebRCON := httptest.NewServer(MockHandlersWebRCON())
+	defer serverWebRCON.Close()
 
 	// Test empty address.
 	t.Run("empty address", func(t *testing.T) {
+		w := &bytes.Buffer{}
+
 		err := Execute(w, session.Session{Address: "", Password: MockPasswordRCON}, MockCommandHelpRCON)
 		assert.Error(t, err)
 	})
 
 	// Test empty password.
 	t.Run("empty password", func(t *testing.T) {
+		w := &bytes.Buffer{}
+
 		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: ""}, MockCommandHelpRCON)
 		assert.Error(t, err)
 	})
 
 	// Test wrong password.
 	t.Run("wrong password", func(t *testing.T) {
+		w := &bytes.Buffer{}
+
 		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: "wrong"}, MockCommandHelpRCON)
 		assert.Error(t, err)
 	})
 
 	// Test empty command.
 	t.Run("empty command", func(t *testing.T) {
+		w := &bytes.Buffer{}
+
 		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON}, "")
 		assert.Error(t, err)
 	})
 
 	// Test long command.
 	t.Run("long command", func(t *testing.T) {
+		w := &bytes.Buffer{}
+
 		bigCommand := make([]byte, 1001)
 		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON}, string(bigCommand))
 		assert.Error(t, err)
@@ -199,18 +210,43 @@ func TestExecute(t *testing.T) {
 
 	// Positive RCON test Execute func.
 	t.Run("no error rcon", func(t *testing.T) {
+		w := &bytes.Buffer{}
+
 		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON}, MockCommandHelpRCON)
 		assert.NoError(t, err)
+
+		result := strings.TrimSuffix(w.String(), "\n")
+		assert.Equal(t, MockCommandHelpResponseTextRCON, result)
 	})
 
 	// Positive TELNET test Execute func.
 	t.Run("no error telnet", func(t *testing.T) {
+		w := &bytes.Buffer{}
+
 		err := Execute(w, session.Session{Address: serverTELNET.Addr(), Password: MockPasswordTELNET, Type: session.ProtocolTELNET}, MockCommandHelpTELNET)
 		assert.NoError(t, err)
+
+		result := strings.TrimSuffix(w.String(), "\n")
+		if !strings.Contains(result, MockCommandHelpResponseTextTELNET) {
+			assert.Equal(t, MockCommandHelpResponseTextTELNET, result)
+		}
+	})
+
+	// Positive WEB RCON test Execute func.
+	t.Run("no error web", func(t *testing.T) {
+		w := &bytes.Buffer{}
+
+		err := Execute(w, session.Session{Address: serverWebRCON.Listener.Addr().String(), Password: MockPasswordWebRCON, Type: session.ProtocolWebRCON}, "status")
+		assert.NoError(t, err)
+
+		result := strings.TrimSuffix(w.String(), "\n")
+		assert.Equal(t, MockCommandStatusResponseTextWebRCON, result)
 	})
 
 	// Positive test Execute func with log.
 	t.Run("no error with log", func(t *testing.T) {
+		w := &bytes.Buffer{}
+
 		logFileName := "tmpfile.log"
 		defer func() {
 			err := os.Remove(logFileName)
@@ -226,7 +262,8 @@ func TestExecute(t *testing.T) {
 		password := getVar("TEST_PZ_SERVER_PASSWORD", "docker")
 
 		t.Run("pz server", func(t *testing.T) {
-			needle := `List of server commands :
+			needle := func() string {
+				n := `List of server commands :
 * addalltowhitelist : Add all the current users connected with a password in the whitelist, so their account is protected.
 * additem : Add an item to a player, if no username is given the item will be added to you, count is optional, use /additem \"username\" \"module.item\" count, ex : /additem \"rj\" \"Base.Axe\" count
 * adduser : Use this command to add a new user in a whitelisted server, use : /adduser \"username\" \"pwd\"
@@ -264,23 +301,18 @@ func TestExecute(t *testing.T) {
 * unbanuser : Unban a player, use : /unbanuser \"username\"
 * voiceban : Block voice from user \"username\", use : /voiceban \"username\" -value, ex /voiceban \"rj\" -true (could be -false)`
 
-			needle = strings.Replace(needle, "List of server commands :", "List of server commands : ", -1)
+				n = strings.Replace(n, "List of server commands :", "List of server commands : ", -1)
+
+				return n
+			}()
+
+			w := &bytes.Buffer{}
 
 			err := Execute(w, session.Session{Address: addr, Password: password}, "help")
 			assert.NoError(t, err)
-			assert.NotEmpty(t, w.String())
 
-			if !strings.Contains(w.String(), needle) {
-				diff := struct {
-					R string
-					N string
-				}{R: w.String(), N: needle}
-
-				js, _ := json.Marshal(diff)
-				fmt.Println(string(js))
-
-				t.Error("response is not contain needle string")
-			}
+			result := strings.TrimSuffix(w.String(), "\n")
+			assert.Equal(t, needle, result)
 		})
 	}
 
@@ -289,7 +321,8 @@ func TestExecute(t *testing.T) {
 		password := getVar("TEST_7DTD_SERVER_PASSWORD", "banana")
 
 		t.Run("7dtd server", func(t *testing.T) {
-			needle := `*** List of Commands ***
+			needle := func() string {
+				n := `*** List of Commands ***
  admin => Manage user permission levels
  aiddebug => Toggles AIDirector debug output.
  audio => Watch audio stats
@@ -405,24 +438,21 @@ of your current perk levels in a CSV file next to it.
  xuireload => Access xui related functions such as reinitializing a window group, opening a window group
  zip => Control zipline settings`
 
-			needle = strings.Replace(needle, "\n", "\r\n", -1)
-			needle = strings.Replace(needle, "some generic info\r\n", "some generic info\n", -1)
-			needle = strings.Replace(needle, "Also stores a list\r\n", "Also stores a list\n", -1)
+				n = strings.Replace(n, "\n", "\r\n", -1)
+				n = strings.Replace(n, "some generic info\r\n", "some generic info\n", -1)
+				n = strings.Replace(n, "Also stores a list\r\n", "Also stores a list\n", -1)
+
+				return n
+			}()
+
+			w := &bytes.Buffer{}
 
 			err := Execute(w, session.Session{Address: addr, Password: password, Type: session.ProtocolTELNET}, "help")
 			assert.NoError(t, err)
-			assert.NotEmpty(t, w.String())
 
+			result := strings.TrimSuffix(w.String(), "\n")
 			if !strings.Contains(w.String(), needle) {
-				diff := struct {
-					R string
-					N string
-				}{R: w.String(), N: needle}
-
-				js, _ := json.Marshal(diff)
-				fmt.Println(string(js))
-
-				t.Error("response is not contain needle string")
+				assert.Equal(t, needle, result)
 			}
 		})
 	}
@@ -432,6 +462,8 @@ of your current perk levels in a CSV file next to it.
 		password := getVar("TEST_RUST_SERVER_RCON_PASSWORD", "docker")
 
 		t.Run("rust server rcon", func(t *testing.T) {
+			w := &bytes.Buffer{}
+
 			err := Execute(w, session.Session{Address: addr, Password: password}, "status")
 			assert.NoError(t, err)
 			assert.NotEmpty(t, w.String())
@@ -445,6 +477,8 @@ of your current perk levels in a CSV file next to it.
 		password := getVar("TEST_RUST_SERVER_WEB_PASSWORD", "docker")
 
 		t.Run("rust server web", func(t *testing.T) {
+			w := &bytes.Buffer{}
+
 			err := Execute(w, session.Session{Address: addr, Password: password, Type: session.ProtocolWebRCON}, "status")
 			assert.NoError(t, err)
 			assert.NotEmpty(t, w.String())
@@ -552,7 +586,7 @@ func TestNewApp(t *testing.T) {
 	// Test getting address and password from config. Log is not used.
 	t.Run("getting address and password from args with log", func(t *testing.T) {
 		var configFileName = "rcon-temp.yaml"
-		err := CreateConfigFile(configFileName, server.Addr(), MockPasswordRCON)
+		err := createConfigFile(configFileName, server.Addr(), MockPasswordRCON)
 		assert.NoError(t, err)
 		defer func() {
 			err := os.Remove(configFileName)
@@ -590,7 +624,7 @@ func TestNewApp(t *testing.T) {
 	// Test default config file is incorrect. Log is not used.
 	t.Run("default config file is incorrect", func(t *testing.T) {
 		var configFileName = "rcon-temp.yaml"
-		err := CreateInvalidConfigFile(configFileName, server.Addr(), MockPasswordRCON)
+		err := createInvalidConfigFile(configFileName, server.Addr(), MockPasswordRCON)
 		assert.NoError(t, err)
 		defer func() {
 			err := os.Remove(configFileName)
@@ -661,8 +695,8 @@ func TestNewApp(t *testing.T) {
 // DefaultTestLogName sets the default log file name.
 const DefaultTestLogName = "rcon-default.log"
 
-// CreateConfigFile creates config file with default section.
-func CreateConfigFile(name string, address string, password string) error {
+// createConfigFile creates config file with default section.
+func createConfigFile(name string, address string, password string) error {
 	var stringBody = fmt.Sprintf(
 		"%s:\n  address: \"%s\"\n  password: \"%s\"\n  log: \"%s\"",
 		config.DefaultConfigEnv, address, password, DefaultTestLogName,
@@ -676,8 +710,8 @@ func CreateConfigFile(name string, address string, password string) error {
 	return err
 }
 
-// CreateIncorrectConfigFile creates incorrect yaml config file.
-func CreateInvalidConfigFile(name string, address string, password string) error {
+// createIncorrectConfigFile creates incorrect yaml config file.
+func createInvalidConfigFile(name string, address string, password string) error {
 	var stringBody = fmt.Sprintf(
 		"address: \"%s\"\n  password: \"%s\"\n  log: \"%s\"",
 		address, password, DefaultTestLogName,

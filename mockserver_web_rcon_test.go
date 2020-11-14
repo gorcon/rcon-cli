@@ -8,27 +8,25 @@ import (
 	"strings"
 	"time"
 
-	gorilla "github.com/gorilla/websocket"
 	"github.com/gorcon/websocket"
+	gorilla "github.com/gorilla/websocket"
 )
 
-const MockPasswordWebsocket = "password"
+const MockPasswordWebRCON = "password"
 
-const MockCommandStatusResponseTextWebsocket = `status
-hostname: Rust Server [DOCKER]
+const MockCommandStatusResponseTextWebRCON = `hostname: Rust Server [DOCKER]
 version : 2260 secure (secure mode enabled, connected to Steam3)
 map     : Procedural Map
 players : 0 (500 max) (0 queued) (0 joining)
-id name ping connected addr owner violation kicks
-`
+id name ping connected addr owner violation kicks`
 
-func MockServerWebsocketHandlers() http.Handler {
+func MockHandlersWebRCON() http.Handler {
 	server := http.NewServeMux()
 
 	var upgrader = gorilla.Upgrader{}
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
-	server.HandleFunc("/"+MockPasswordWebsocket, func(w http.ResponseWriter, r *http.Request) {
+	server.HandleFunc("/"+MockPasswordWebRCON, func(w http.ResponseWriter, r *http.Request) {
 		ws, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Printf("upgrade error: %v\n", err)
@@ -59,7 +57,7 @@ func MockServerWebsocketHandlers() http.Handler {
 		switch message.Message {
 		case "status":
 			response = websocket.Message{
-				Message:    MockCommandStatusResponseTextWebsocket,
+				Message:    MockCommandStatusResponseTextWebRCON,
 				Identifier: message.Identifier,
 				Type:       "Generic",
 			}

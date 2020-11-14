@@ -14,8 +14,8 @@ const (
 	MockAddressTELNET  = "127.0.0.1:0"
 	MockPasswordTELNET = "password"
 
-	MockCommandHelpTELNET         = "help"
-	MockCommandHelpResponseTELNET = "lorem ipsum dolor sit amet"
+	MockCommandHelpTELNET             = "help"
+	MockCommandHelpResponseTextTELNET = "lorem ipsum dolor sit amet"
 )
 
 // MockServerTELNET is a mock Source TELNET protocol server.
@@ -140,7 +140,7 @@ func (s *MockServerTELNET) handle(conn net.Conn) {
 		switch request {
 		case "":
 		case MockCommandHelpTELNET:
-			w.WriteString(MockCommandHelpResponseTELNET + telnet.CRLF)
+			w.WriteString(MockCommandHelpResponseTextTELNET + telnet.CRLF)
 		case "exit":
 		default:
 			w.WriteString(fmt.Sprintf("*** ERROR: unknown command '%s'", request) + telnet.CRLF)

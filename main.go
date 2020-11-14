@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/gorcon/rcon-cli/internal/config"
 	"github.com/gorcon/rcon-cli/internal/logger"
@@ -21,7 +22,7 @@ const CommandQuit = ":q"
 
 // Version displays service version in semantic versioning (http://semver.org/).
 // Can be replaced while compiling with flag `-ldflags "-X main.Version=${VERSION}"`.
-var Version = "develop"
+var Version = "0.0.0-develop"
 
 func main() {
 	app := NewApp(os.Stdin, os.Stdout)
@@ -118,6 +119,10 @@ func Execute(w io.Writer, ses session.Session, command string) error {
 	}
 
 	if result != "" {
+		result = strings.TrimSuffix(result, "\r\n")
+		result = strings.TrimSuffix(result, "\r")
+		result = strings.TrimSuffix(result, "\n")
+
 		fmt.Fprintln(w, result)
 	}
 

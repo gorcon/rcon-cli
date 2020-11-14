@@ -13,8 +13,8 @@ const (
 	MockAddressRCON  = "127.0.0.1:0"
 	MockPasswordRCON = "password"
 
-	MockCommandHelpRCON         = "help"
-	MockCommandHelpResponseRCON = "lorem ipsum dolor sit amet"
+	MockCommandHelpRCON             = "help"
+	MockCommandHelpResponseTextRCON = "lorem ipsum dolor sit amet"
 )
 
 // MockServerRCON is a mock Source RCON Protocol server.
@@ -136,7 +136,7 @@ func (s *MockServerRCON) handle(conn net.Conn) {
 		case rcon.SERVERDATA_EXECCOMMAND:
 			switch request.Body() {
 			case MockCommandHelpRCON:
-				responseBody = MockCommandHelpResponseRCON
+				responseBody = MockCommandHelpResponseTextRCON
 			default:
 				responseBody = "unknown command"
 			}
