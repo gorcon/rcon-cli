@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
-- Added tests for real servers Rust and Project Zomboid.  
+- Added tests for real servers. Servers list: `Project Zomboid`, `7 Days to Die`, `Rust`.  
 
 ## [v0.8.0-beta.2] - 2020-10-18
 ### Added
