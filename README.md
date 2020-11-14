@@ -121,7 +121,7 @@ the 7 Days to Die console is based. You can use `-t telnet` argument to specify 
 Since from `rcon-cli` 0.8.0 version support for the Web RCON protocol has been added. On this protocol remote access to 
 the Rust console is based. You can use `-t web` argument to specify the protocol type.
 
-     ./rcon -a 127.0.0.1:28016 -p password -t veb -c status
+     ./rcon -a 127.0.0.1:28016 -p password -t web -c status
 
 ## Contribute
 
