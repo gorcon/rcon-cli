@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/gorcon/rcon"
 )
@@ -49,6 +52,15 @@ func NewMockServerRCON() (*MockServerRCON, error) {
 	return server, nil
 }
 
+func MustNewMockServerRCON() *MockServerRCON {
+	server, err := NewMockServerRCON()
+	if err != nil {
+		panic(err)
+	}
+
+	return server
+}
+
 // Close shuts down the MockServer.
 func (s *MockServerRCON) Close() error {
 	close(s.quit)
@@ -72,7 +84,23 @@ func (s *MockServerRCON) Close() error {
 	}
 	s.mu.Unlock()
 
+	close(s.errors)
+
 	return err
+}
+
+func (s *MockServerRCON) MustClose() {
+	if s == nil {
+		panic("server is not running")
+	}
+
+	if err := s.Close(); err != nil {
+		panic(err)
+	}
+
+	for err := range s.errors {
+		panic(err)
+	}
 }
 
 // Addr returns IPv4 string MockServer address.
@@ -90,7 +118,6 @@ func (s *MockServerRCON) serve() {
 			if s.isRunning() {
 				s.reportError(fmt.Errorf("serve error: %s", err))
 			}
-
 			return
 		}
 
@@ -127,16 +154,36 @@ func (s *MockServerRCON) handle(conn net.Conn) {
 
 		switch request.Type {
 		case rcon.SERVERDATA_AUTH:
-			responseType = rcon.SERVERDATA_AUTH_RESPONSE
 			if request.Body() != MockPasswordRCON {
+				if request.Body() == "timeout" {
+					time.Sleep(rcon.DefaultDialTimeout + 1*time.Second)
+				}
 				// If authentication was failed, the ID must be assigned to -1.
 				responseID = -1
 				responseBody = string([]byte{0x00})
+			} else {
+				_ = s.write(conn, responseID, rcon.NewPacket(responseType, responseID, responseBody))
 			}
+
+			responseType = rcon.SERVERDATA_AUTH_RESPONSE
 		case rcon.SERVERDATA_EXECCOMMAND:
 			switch request.Body() {
 			case MockCommandHelpRCON:
 				responseBody = MockCommandHelpResponseTextRCON
+			case "deadline":
+				time.Sleep(rcon.DefaultDeadline + 1*time.Second)
+				responseBody = request.Body()
+			case "rust":
+				response := rcon.NewPacket(4, responseID, responseBody)
+				if err := s.write(conn, responseID, response); err != nil {
+					s.reportError(fmt.Errorf("handle write response error: %s", err))
+					return
+				}
+
+				responseBody = request.Body()
+			case "padding":
+				_ = s.writeWithInvalidPadding(conn, responseID, rcon.NewPacket(responseType, responseID, responseBody))
+				return
 			default:
 				responseBody = "unknown command"
 			}
@@ -173,6 +220,38 @@ func (s *MockServerRCON) write(conn net.Conn, id int32, packets ...*rcon.Packet)
 	return nil
 }
 
+func (s *MockServerRCON) writeWithInvalidPadding(conn net.Conn, id int32, packets ...*rcon.Packet) error {
+	for _, packet := range packets {
+		packet.ID = id
+
+		buffer := bytes.NewBuffer(make([]byte, 0, packet.Size+4))
+
+		if err := binary.Write(buffer, binary.LittleEndian, packet.Size); err != nil {
+			return err
+		}
+
+		if err := binary.Write(buffer, binary.LittleEndian, packet.ID); err != nil {
+			return err
+		}
+
+		if err := binary.Write(buffer, binary.LittleEndian, packet.Type); err != nil {
+			return err
+		}
+
+		// Write command body, null terminated ASCII string and an empty ASCIIZ string.
+		// Second padding byte is incorrect.
+		if _, err := buffer.Write(append([]byte(packet.Body()), 0x00, 0x01)); err != nil {
+			return err
+		}
+
+		_, err := buffer.WriteTo(conn)
+
+		return err
+	}
+
+	return nil
+}
+
 // closeConnection closes a client conn and removes it from connections map.
 func (s *MockServerRCON) closeConnection(conn net.Conn) {
 	s.mu.Lock()
@@ -195,6 +274,7 @@ func (s *MockServerRCON) reportError(err error) bool {
 		return true
 	default:
 		fmt.Printf("erros channel is locked: %s\n", err)
+		// panic("erros channel is locked")
 		return false
 	}
 }

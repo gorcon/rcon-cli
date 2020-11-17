@@ -1,12 +1,9 @@
 .idea/
-rcon-local.yaml
-rcon-cli
-rcon-cli.exe
-build.sh
+.vscode/
 vendor/
-Gopkg.lock
 release/
 logs/
+*local.yaml
+rcon-cli
+rcon-cli.exe
 *.log
-rcon-temp.yaml
-temp/

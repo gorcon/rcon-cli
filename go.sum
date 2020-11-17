@@ -5,8 +5,8 @@ github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gorcon/rcon v1.2.4 h1:X+2mW0yQeLqQiKGbFa69v0Qz/kEYl6Qu9ztSLmD17eA=
 github.com/gorcon/rcon v1.2.4/go.mod h1:tR1u9kJLW1lKzOMLl9VpXT/JYN4efFtD3fSmmwSpOHc=
-github.com/gorcon/telnet v1.0.1 h1:Nj3G8OddlB/4z7ciMblLDm5DNUyHrqpB3VINeFKDZA0=
-github.com/gorcon/telnet v1.0.1/go.mod h1:KwU1iCwOxpp/G52AfvVsMxdSEA475k9tt9hMzQSx8Lc=
+github.com/gorcon/telnet v1.1.0 h1:z+UVtFcCG4vON2TwSxOZo6OuC7qPQ8C876RjWDghV5g=
+github.com/gorcon/telnet v1.1.0/go.mod h1:KwU1iCwOxpp/G52AfvVsMxdSEA475k9tt9hMzQSx8Lc=
 github.com/gorcon/websocket v1.0.1 h1:wPJzT4vOIDvvju5nMECxx2Gq6Apzs0CjRU8Pm1h73ro=
 github.com/gorcon/websocket v1.0.1/go.mod h1:FrkydxLIsmjR0a1ourSUrmqVfCbzueOMzgYkN7MaBnE=
 github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=

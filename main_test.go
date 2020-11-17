@@ -140,29 +140,11 @@ func TestGetLogFile(t *testing.T) {
 }
 
 func TestExecute(t *testing.T) {
-	serverRCON, err := NewMockServerRCON()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		assert.NoError(t, serverRCON.Close())
-		close(serverRCON.errors)
-		for err := range serverRCON.errors {
-			assert.NoError(t, err)
-		}
-	}()
+	serverRCON := MustNewMockServerRCON()
+	defer serverRCON.MustClose()
 
-	serverTELNET, err := NewMockServerTELNET()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		assert.NoError(t, serverTELNET.Close())
-		close(serverTELNET.errors)
-		for err := range serverTELNET.errors {
-			assert.NoError(t, err)
-		}
-	}()
+	serverTELNET := MustNewMockServerTELNET()
+	defer serverTELNET.MustClose()
 
 	serverWebRCON := httptest.NewServer(MockHandlersWebRCON())
 	defer serverWebRCON.Close()
@@ -322,7 +304,19 @@ func TestExecute(t *testing.T) {
 
 		t.Run("7dtd server", func(t *testing.T) {
 			needle := func() string {
-				n := `*** List of Commands ***
+				n := `*** Generic Console Help ***
+To get further help on a specific topic or command type (without the brackets)
+    help <topic / command>
+
+Generic notation of command parameters:
+   <param name>              Required parameter
+   <entityId / player name>  Possible types of parameter values
+   [param name]              Optional parameter
+
+*** List of Help Topics ***
+None yet
+
+*** List of Commands ***
  admin => Manage user permission levels
  aiddebug => Toggles AIDirector debug output.
  audio => Watch audio stats
@@ -489,17 +483,8 @@ of your current perk levels in a CSV file next to it.
 }
 
 func TestInteractive(t *testing.T) {
-	server, err := NewMockServerRCON()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		assert.NoError(t, server.Close())
-		close(server.errors)
-		for err := range server.errors {
-			assert.NoError(t, err)
-		}
-	}()
+	serverRCON := MustNewMockServerRCON()
+	defer serverRCON.MustClose()
 
 	w := &bytes.Buffer{}
 
@@ -508,17 +493,17 @@ func TestInteractive(t *testing.T) {
 		var r bytes.Buffer
 		r.WriteString(CommandQuit + "\n")
 
-		err = Interactive(&r, w, session.Session{Address: server.Addr(), Password: "fake"})
+		err := Interactive(&r, w, session.Session{Address: serverRCON.Addr(), Password: "fake"})
 		assert.Error(t, err)
 	})
 
 	// Test get Interactive address.
 	t.Run("interactive get address", func(t *testing.T) {
 		var r bytes.Buffer
-		r.WriteString(server.Addr() + "\n")
+		r.WriteString(serverRCON.Addr() + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err = Interactive(&r, w, session.Session{Address: "", Password: MockPasswordRCON})
+		err := Interactive(&r, w, session.Session{Address: "", Password: MockPasswordRCON})
 		assert.NoError(t, err)
 	})
 
@@ -528,7 +513,7 @@ func TestInteractive(t *testing.T) {
 		r.WriteString(MockPasswordRCON + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err = Interactive(&r, w, session.Session{Address: server.Addr(), Password: ""})
+		err := Interactive(&r, w, session.Session{Address: serverRCON.Addr(), Password: ""})
 		assert.NoError(t, err)
 	})
 
@@ -539,7 +524,7 @@ func TestInteractive(t *testing.T) {
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err = Interactive(r, w, session.Session{Address: server.Addr(), Password: MockPasswordRCON})
+		err := Interactive(r, w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON})
 		assert.NoError(t, err)
 	})
 
@@ -550,23 +535,14 @@ func TestInteractive(t *testing.T) {
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err = Interactive(r, w, session.Session{Address: server.Addr(), Password: MockPasswordTELNET, Type: session.ProtocolTELNET})
+		err := Interactive(r, w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordTELNET, Type: session.ProtocolTELNET})
 		assert.NoError(t, err)
 	})
 }
 
 func TestNewApp(t *testing.T) {
-	server, err := NewMockServerRCON()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		assert.NoError(t, server.Close())
-		close(server.errors)
-		for err := range server.errors {
-			assert.NoError(t, err)
-		}
-	}()
+	serverRCON := MustNewMockServerRCON()
+	defer serverRCON.MustClose()
 
 	// Test getting address and password from args. Config ang log are not used.
 	t.Run("getting address and password from args", func(t *testing.T) {
@@ -575,21 +551,24 @@ func TestNewApp(t *testing.T) {
 
 		app := NewApp(r, w)
 		args := os.Args[0:1]
-		args = append(args, "-a="+server.Addr())
+		args = append(args, "-a="+serverRCON.Addr())
 		args = append(args, "-p="+MockPasswordRCON)
 		args = append(args, "-c="+MockCommandHelpRCON)
 
-		err = app.Run(args)
+		err := app.Run(args)
 		assert.NoError(t, err)
 	})
 
 	// Test getting address and password from config. Log is not used.
 	t.Run("getting address and password from args with log", func(t *testing.T) {
 		var configFileName = "rcon-temp.yaml"
-		err := createConfigFile(configFileName, server.Addr(), MockPasswordRCON)
+		err := createConfigFile(configFileName, serverRCON.Addr(), MockPasswordRCON)
 		assert.NoError(t, err)
 		defer func() {
-			err := os.Remove(configFileName)
+			err := os.Remove(DefaultTestLogName)
+			assert.NoError(t, err)
+
+			err = os.Remove(configFileName)
 			assert.NoError(t, err)
 		}()
 
@@ -614,7 +593,7 @@ func TestNewApp(t *testing.T) {
 		args := os.Args[0:1]
 		args = append(args, "-c="+MockCommandHelpRCON)
 
-		err = app.Run(args)
+		err := app.Run(args)
 		assert.Error(t, err)
 		if !os.IsNotExist(err) {
 			t.Errorf("unexpected error: %v", err)
@@ -624,7 +603,7 @@ func TestNewApp(t *testing.T) {
 	// Test default config file is incorrect. Log is not used.
 	t.Run("default config file is incorrect", func(t *testing.T) {
 		var configFileName = "rcon-temp.yaml"
-		err := createInvalidConfigFile(configFileName, server.Addr(), MockPasswordRCON)
+		err := createInvalidConfigFile(configFileName, serverRCON.Addr(), MockPasswordRCON)
 		assert.NoError(t, err)
 		defer func() {
 			err := os.Remove(configFileName)
@@ -654,7 +633,7 @@ func TestNewApp(t *testing.T) {
 		args[0] = ""
 		args = append(args, "-c="+MockCommandHelpRCON)
 
-		err = app.Run(args)
+		err := app.Run(args)
 		assert.EqualError(t, err, "address is not set: to set address add -a host:port")
 	})
 
@@ -667,10 +646,10 @@ func TestNewApp(t *testing.T) {
 		args := os.Args[0:1]
 		// Hack to use os.Args[0] in go run
 		args[0] = ""
-		args = append(args, "-a="+server.Addr())
+		args = append(args, "-a="+serverRCON.Addr())
 		args = append(args, "-c="+MockCommandHelpRCON)
 
-		err = app.Run(args)
+		err := app.Run(args)
 		assert.EqualError(t, err, "password is not set: to set password add -p password")
 	})
 
@@ -681,19 +660,19 @@ func TestNewApp(t *testing.T) {
 
 		app := NewApp(r, w)
 		args := os.Args[0:1]
-		args = append(args, "-a="+server.Addr())
+		args = append(args, "-a="+serverRCON.Addr())
 		args = append(args, "-p="+MockPasswordRCON)
 
 		r.WriteString(MockCommandHelpRCON + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err = app.Run(args)
+		err := app.Run(args)
 		assert.NoError(t, err)
 	})
 }
 
 // DefaultTestLogName sets the default log file name.
-const DefaultTestLogName = "rcon-default.log"
+const DefaultTestLogName = "rcon-test.log"
 
 // createConfigFile creates config file with default section.
 func createConfigFile(name string, address string, password string) error {

@@ -18,6 +18,20 @@ const (
 	MockCommandHelpResponseTextTELNET = "lorem ipsum dolor sit amet"
 )
 
+const MockAuthSuccessWelcomeMessageTELNET = `*** Connected with 7DTD server.
+*** Server version: Alpha 18.4 (b4) Compatibility Version: Alpha 18.4
+*** Dedicated server only build
+
+Server IP:   127.0.0.1
+Server port: 26900
+Max players: 8
+Game mode:   GameModeSurvival
+World:       Navezgane
+Game name:   My Game
+Difficulty:  2
+
+Press 'help' to get a list of all commands. Press 'exit' to end session.`
+
 // MockServerTELNET is a mock Source TELNET protocol server.
 type MockServerTELNET struct {
 	addr        string
@@ -50,6 +64,15 @@ func NewMockServerTELNET() (*MockServerTELNET, error) {
 	return server, nil
 }
 
+func MustNewMockServerTELNET() *MockServerTELNET {
+	server, err := NewMockServerTELNET()
+	if err != nil {
+		panic(err)
+	}
+
+	return server
+}
+
 // Close shuts down the MockServer.
 func (s *MockServerTELNET) Close() error {
 	close(s.quit)
@@ -73,7 +96,23 @@ func (s *MockServerTELNET) Close() error {
 	}
 	s.mu.Unlock()
 
+	close(s.errors)
+
 	return err
+}
+
+func (s *MockServerTELNET) MustClose() {
+	if s == nil {
+		panic("server is not running")
+	}
+
+	if err := s.Close(); err != nil {
+		panic(err)
+	}
+
+	for err := range s.errors {
+		panic(err)
+	}
 }
 
 // Addr returns IPv4 string MockServer address.
@@ -140,6 +179,7 @@ func (s *MockServerTELNET) handle(conn net.Conn) {
 		switch request {
 		case "":
 		case MockCommandHelpTELNET:
+			w.WriteString(fmt.Sprintf("2020-11-14T23:09:20 31220.643 "+telnet.ResponseINFLayout, request, conn.RemoteAddr()) + telnet.CRLF)
 			w.WriteString(MockCommandHelpResponseTextTELNET + telnet.CRLF)
 		case "exit":
 		default:
@@ -191,7 +231,7 @@ func (s *MockServerTELNET) reportError(err error) bool {
 func (s *MockServerTELNET) auth(r *bufio.Reader, w *bufio.Writer) bool {
 	const limit = 10
 
-	w.WriteString("Please enter password:" + telnet.CRLF)
+	w.WriteString(telnet.ResponseEnterPassword + telnet.CRLF)
 	defer w.Flush()
 
 	for attempt := 1; attempt <= limit; attempt++ {
@@ -203,15 +243,19 @@ func (s *MockServerTELNET) auth(r *bufio.Reader, w *bufio.Writer) bool {
 
 		switch password {
 		case MockPasswordTELNET:
-			w.WriteString(telnet.AuthSuccess + telnet.CRLF)
+			w.WriteString(telnet.ResponseAuthSuccess + telnet.CRLF + telnet.CRLF + telnet.CRLF + telnet.CRLF)
+			w.WriteString(telnet.ResponseAuthSuccess + telnet.CRLF + telnet.CRLF)
 			return true
+		case "unexpect":
+			w.WriteString("My spoon is too big" + telnet.CRLF + telnet.CRLF)
+			return false
 		default:
 			if attempt == limit {
-				w.WriteString(telnet.AuthTooManyFails + telnet.CRLF)
+				w.WriteString(telnet.ResponseAuthTooManyFails + telnet.CRLF)
 				return false
 			}
 
-			w.WriteString(telnet.AuthIncorrectPassword + telnet.CRLF)
+			w.WriteString(telnet.ResponseAuthIncorrectPassword + telnet.CRLF)
 		}
 	}
 
