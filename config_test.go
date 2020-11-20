@@ -30,13 +30,8 @@ func TestNewConfig(t *testing.T) {
 	t.Run("no errors json", func(t *testing.T) {
 		configFileName := "rcon-test-local.json"
 		stringBody := fmt.Sprintf(ConfigLayoutJSON, DefaultConfigEnv, "", "", DefaultTestLogName, "")
-		err := createFile(configFileName, stringBody)
-		assert.NoError(t, err)
-
-		defer func() {
-			err := os.Remove(configFileName)
-			assert.NoError(t, err)
-		}()
+		createFile(configFileName, stringBody)
+		defer os.Remove(configFileName)
 
 		expected := Config{
 			DefaultConfigEnv: session.Session{Address: "", Password: "", Log: DefaultTestLogName},
@@ -71,18 +66,55 @@ func TestNewConfig(t *testing.T) {
 	t.Run("file is incorrect", func(t *testing.T) {
 		configFileName := "rcon-test-local.yaml"
 		stringBody := fmt.Sprintf("address: \"%s\"\n  password: \"%s\"\n  log: \"%s\"", "", MockPasswordRCON, DefaultTestLogName)
-		err := createFile(configFileName, stringBody)
-		assert.NoError(t, err)
-
-		defer func() {
-			err := os.Remove(configFileName)
-			assert.NoError(t, err)
-		}()
+		createFile(configFileName, stringBody)
+		defer os.Remove(configFileName)
 
 		cfg, err := NewConfig(configFileName)
 		assert.EqualError(t, err, "read config error: yaml: line 1: did not find expected key")
 
 		assert.Nil(t, cfg)
+	})
+
+	t.Run("unsupported file extension", func(t *testing.T) {
+		configFileName := "unsupported-local.ini"
+		stringBody := "[genera]\addr="
+		createFile(configFileName, stringBody)
+		defer os.Remove(configFileName)
+
+		cfg, err := NewConfig(configFileName)
+		assert.EqualError(t, err, "read config error: unsupported file extension .ini")
+
+		assert.Nil(t, cfg)
+	})
+
+	t.Run("validation failed", func(t *testing.T) {
+		configFileName := "rcon-test-local.json"
+		stringBody := fmt.Sprintf(ConfigLayoutJSON, DefaultConfigEnv, "", "", DefaultTestLogName, "pigeon post")
+		createFile(configFileName, stringBody)
+		defer os.Remove(configFileName)
+
+		cfg, err := NewConfig(configFileName)
+		assert.EqualError(t, err, "config validation error: unsupported type in default environment")
+
+		expected := Config{
+			DefaultConfigEnv: session.Session{Address: "", Password: "", Log: DefaultTestLogName, Type: "pigeon post"},
+		}
+
+		assert.Equal(t, &expected, cfg)
+	})
+}
+
+func TestConfig_Validate(t *testing.T) {
+	t.Run("initialized empty config", func(t *testing.T) {
+		cfg := new(Config)
+		err := cfg.Validate()
+		assert.NoError(t, err)
+	})
+
+	t.Run("not initialized empty config", func(t *testing.T) {
+		var cfg *Config
+		err := cfg.Validate()
+		assert.EqualError(t, err, "config validation error: config is not set")
 	})
 }
 
@@ -91,6 +123,7 @@ func createFile(name, stringBody string) error {
 	if err != nil {
 		return err
 	}
+
 	_, err = file.WriteString(stringBody)
 
 	return err

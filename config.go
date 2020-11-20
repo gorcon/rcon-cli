@@ -94,7 +94,7 @@ func (cfg *Config) Validate() error {
 		switch ses.Type {
 		case "", session.ProtocolRCON, session.ProtocolTELNET, session.ProtocolWebRCON:
 		default:
-			return fmt.Errorf("%w: unknown type in %s environment", ErrConfigValidation, key)
+			return fmt.Errorf("%w: unsupported type in %s environment", ErrConfigValidation, key)
 		}
 	}
 
