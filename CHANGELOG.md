@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+### Added
+- Added config validation. 
+- Added config JSON format supporting. 
 
 ## [v0.8.1] - 2020-11-17
 ### Added

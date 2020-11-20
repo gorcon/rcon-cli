@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gorcon/rcon-cli/internal/config"
 	"github.com/gorcon/rcon-cli/internal/logger"
 	"github.com/gorcon/rcon-cli/internal/proto/rcon"
 	"github.com/gorcon/rcon-cli/internal/proto/telnet"
@@ -45,12 +44,12 @@ func NewApp(r io.Reader, w io.Writer) *cli.App {
 		cli.StringFlag{
 			Name: "a, address",
 			Usage: "Set host and port to remote server. Example 127.0.0.1:16260" +
-				"\n                              can be set in the config file " + config.DefaultConfigName + ".",
+				"\n                              can be set in the config file " + DefaultConfigName + ".",
 		},
 		cli.StringFlag{
 			Name: "p, password",
 			Usage: "Set password to remote server" +
-				"\n                               can be set in the config file " + config.DefaultConfigName + ".",
+				"\n                               can be set in the config file " + DefaultConfigName + ".",
 		},
 		cli.StringFlag{
 			Name:  "c, command",
@@ -68,7 +67,7 @@ func NewApp(r io.Reader, w io.Writer) *cli.App {
 		cli.StringFlag{
 			Name: "cfg",
 			Usage: "Allows to specify the path and name of the configuration file. The default" +
-				"\n                value is " + config.DefaultConfigName + ".",
+				"\n                value is " + DefaultConfigName + ".",
 		},
 		cli.StringFlag{
 			Name:  "t, type",
@@ -194,14 +193,14 @@ func GetCredentials(c *cli.Context) (ses session.Session, err error) {
 		return ses, nil
 	}
 
-	cfg, err := config.GetConfig(c.GlobalString("cfg"))
+	cfg, err := NewConfig(c.GlobalString("cfg"))
 	if err != nil {
 		return ses, err
 	}
 
 	e := c.GlobalString("e")
 	if e == "" {
-		e = config.DefaultConfigEnv
+		e = DefaultConfigEnv
 	}
 
 	// Get variables from config environment if flags are not defined.

@@ -2,3 +2,4 @@ default:
   address: "" # host:port, for example 127.0.0.1:16260
   password: ""
   log: "rcon-default.log"
+  type: "" # rcon, telnet, web.
