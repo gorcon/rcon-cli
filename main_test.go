@@ -2,16 +2,126 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/gorcon/rcon"
 	"github.com/gorcon/rcon-cli/internal/logger"
 	"github.com/gorcon/rcon-cli/internal/session"
+	"github.com/gorcon/rcon/rcontest"
+	"github.com/gorcon/telnet"
+	"github.com/gorcon/telnet/telnettest"
+	"github.com/gorcon/websocket"
+	gorilla "github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
+
+func handlersRCON(c *rcontest.Context) {
+	switch c.Request().Body() {
+	case "help":
+		responseBody := "lorem ipsum dolor sit amet"
+		rcon.NewPacket(rcon.SERVERDATA_RESPONSE_VALUE, c.Request().ID, responseBody).WriteTo(c.Conn())
+	default:
+		rcon.NewPacket(rcon.SERVERDATA_RESPONSE_VALUE, c.Request().ID, "unknown command").WriteTo(c.Conn())
+	}
+}
+
+func handlersTELNET(c *telnettest.Context) {
+	switch c.Request() {
+	case "", "exit":
+	case "help":
+		c.Writer().WriteString(fmt.Sprintf("2020-11-14T23:09:20 31220.643 "+telnet.ResponseINFLayout, c.Request(), c.Conn().RemoteAddr()) + telnet.CRLF)
+		c.Writer().WriteString("lorem ipsum dolor sit amet" + telnet.CRLF)
+	default:
+		c.Writer().WriteString(fmt.Sprintf("*** ERROR: unknown command '%s'", c.Request()) + telnet.CRLF)
+	}
+
+	c.Writer().Flush()
+}
+
+const MockCommandStatusResponseTextWebRCON = `hostname: Rust Server [DOCKER]
+version : 2260 secure (secure mode enabled, connected to Steam3)
+map     : Procedural Map
+players : 0 (500 max) (0 queued) (0 joining)
+id name ping connected addr owner violation kicks`
+
+func handlersWebRCON() http.Handler {
+	server := http.NewServeMux()
+
+	var upgrader = gorilla.Upgrader{}
+	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+
+	server.HandleFunc("/password", func(w http.ResponseWriter, r *http.Request) {
+		ws, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Printf("upgrade error: %v\n", err)
+			return
+		}
+
+		defer ws.Close()
+
+		var response websocket.Message
+
+		// Receive message.
+		_, p, err := ws.ReadMessage()
+		if err != nil {
+			if !strings.Contains(err.Error(), "gorilla: close 1006 (abnormal closure): unexpected EO") {
+				log.Printf("read message error: %v\n", err)
+			}
+			return
+		}
+
+		var message websocket.Message
+		if err := json.Unmarshal(p, &message); err != nil {
+			// TODO: What Rust responses on read message fail?
+			fmt.Println(string(p))
+			log.Printf("unmarshal message error: %v\n", err)
+			return
+		}
+
+		switch message.Message {
+		case "status":
+			response = websocket.Message{
+				Message:    MockCommandStatusResponseTextWebRCON,
+				Identifier: message.Identifier,
+				Type:       "Generic",
+			}
+		case "deadline":
+			time.Sleep(websocket.DefaultDeadline + 1*time.Second)
+			response = websocket.Message{
+				Message:    fmt.Sprintf("sleep for %d secends", websocket.DefaultDeadline+1*time.Second),
+				Identifier: message.Identifier,
+				Type:       "Generic",
+			}
+		default:
+			response = websocket.Message{
+				Message:    fmt.Sprintf("Command '%s' not found", message.Message),
+				Identifier: message.Identifier,
+				Type:       "Warning",
+			}
+		}
+
+		js, err := json.Marshal(response)
+		if err != nil {
+			log.Printf("marshal response error: %v\n", err)
+			return
+		}
+
+		if err := ws.WriteMessage(gorilla.TextMessage, js); err != nil {
+			log.Printf("write response error: %v\n", err)
+			return
+		}
+	})
+
+	return server
+}
 
 func TestAddLog(t *testing.T) {
 	logName := "tmpfile.log"
@@ -119,20 +229,26 @@ func TestGetLogFile(t *testing.T) {
 }
 
 func TestExecute(t *testing.T) {
-	serverRCON := MustNewMockServerRCON()
-	defer serverRCON.MustClose()
+	serverRCON := rcontest.NewServer(
+		rcontest.SetSettings(rcontest.Settings{Password: "password"}),
+		rcontest.SetCommandHandler(handlersRCON),
+	)
+	defer serverRCON.Close()
 
-	serverTELNET := MustNewMockServerTELNET()
-	defer serverTELNET.MustClose()
+	serverTELNET := telnettest.NewServer(
+		telnettest.SetSettings(telnettest.Settings{Password: "password"}),
+		telnettest.SetCommandHandler(handlersTELNET),
+	)
+	defer serverTELNET.Close()
 
-	serverWebRCON := httptest.NewServer(MockHandlersWebRCON())
+	serverWebRCON := httptest.NewServer(handlersWebRCON())
 	defer serverWebRCON.Close()
 
 	// Test empty address.
 	t.Run("empty address", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := Execute(w, session.Session{Address: "", Password: MockPasswordRCON}, MockCommandHelpRCON)
+		err := Execute(w, session.Session{Address: "", Password: "password"}, "help")
 		assert.Error(t, err)
 	})
 
@@ -140,7 +256,7 @@ func TestExecute(t *testing.T) {
 	t.Run("empty password", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: ""}, MockCommandHelpRCON)
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: ""}, "help")
 		assert.Error(t, err)
 	})
 
@@ -148,7 +264,7 @@ func TestExecute(t *testing.T) {
 	t.Run("wrong password", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: "wrong"}, MockCommandHelpRCON)
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: "wrong"}, "help")
 		assert.Error(t, err)
 	})
 
@@ -156,7 +272,7 @@ func TestExecute(t *testing.T) {
 	t.Run("empty command", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON}, "")
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: "password"}, "")
 		assert.Error(t, err)
 	})
 
@@ -165,7 +281,7 @@ func TestExecute(t *testing.T) {
 		w := &bytes.Buffer{}
 
 		bigCommand := make([]byte, 1001)
-		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON}, string(bigCommand))
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: "password"}, string(bigCommand))
 		assert.Error(t, err)
 	})
 
@@ -173,23 +289,23 @@ func TestExecute(t *testing.T) {
 	t.Run("no error rcon", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON}, MockCommandHelpRCON)
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: "password"}, "help")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
-		assert.Equal(t, MockCommandHelpResponseTextRCON, result)
+		assert.Equal(t, "lorem ipsum dolor sit amet", result)
 	})
 
 	// Positive TELNET test Execute func.
 	t.Run("no error telnet", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := Execute(w, session.Session{Address: serverTELNET.Addr(), Password: MockPasswordTELNET, Type: session.ProtocolTELNET}, MockCommandHelpTELNET)
+		err := Execute(w, session.Session{Address: serverTELNET.Addr(), Password: "password", Type: session.ProtocolTELNET}, "help")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
-		if !strings.Contains(result, MockCommandHelpResponseTextTELNET) {
-			assert.Equal(t, MockCommandHelpResponseTextTELNET, result)
+		if !strings.Contains(result, "lorem ipsum dolor sit amet") {
+			assert.Equal(t, "lorem ipsum dolor sit amet", result)
 		}
 	})
 
@@ -197,7 +313,7 @@ func TestExecute(t *testing.T) {
 	t.Run("no error web", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := Execute(w, session.Session{Address: serverWebRCON.Listener.Addr().String(), Password: MockPasswordWebRCON, Type: session.ProtocolWebRCON}, "status")
+		err := Execute(w, session.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: session.ProtocolWebRCON}, "status")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
@@ -214,7 +330,7 @@ func TestExecute(t *testing.T) {
 			assert.NoError(t, err)
 		}()
 
-		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON, Log: logFileName}, MockCommandHelpRCON)
+		err := Execute(w, session.Session{Address: serverRCON.Addr(), Password: "password", Log: logFileName}, "help")
 		assert.NoError(t, err)
 	})
 
@@ -462,8 +578,11 @@ of your current perk levels in a CSV file next to it.
 }
 
 func TestInteractive(t *testing.T) {
-	serverRCON := MustNewMockServerRCON()
-	defer serverRCON.MustClose()
+	serverRCON := rcontest.NewServer(
+		rcontest.SetSettings(rcontest.Settings{Password: "password"}),
+		rcontest.SetCommandHandler(handlersRCON),
+	)
+	defer serverRCON.Close()
 
 	w := &bytes.Buffer{}
 
@@ -482,14 +601,14 @@ func TestInteractive(t *testing.T) {
 		r.WriteString(serverRCON.Addr() + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err := Interactive(&r, w, session.Session{Address: "", Password: MockPasswordRCON})
+		err := Interactive(&r, w, session.Session{Address: "", Password: "password"})
 		assert.NoError(t, err)
 	})
 
 	// Test get Interactive password.
 	t.Run("interactive get password", func(t *testing.T) {
 		var r bytes.Buffer
-		r.WriteString(MockPasswordRCON + "\n")
+		r.WriteString("password" + "\n")
 		r.WriteString(CommandQuit + "\n")
 
 		err := Interactive(&r, w, session.Session{Address: serverRCON.Addr(), Password: ""})
@@ -499,29 +618,32 @@ func TestInteractive(t *testing.T) {
 	// Test get Interactive commands RCON.
 	t.Run("interactive get commands rcon", func(t *testing.T) {
 		r := &bytes.Buffer{}
-		r.WriteString(MockCommandHelpRCON + "\n")
+		r.WriteString("help" + "\n")
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err := Interactive(r, w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordRCON})
+		err := Interactive(r, w, session.Session{Address: serverRCON.Addr(), Password: "password"})
 		assert.NoError(t, err)
 	})
 
 	// Test get Interactive commands TELNET.
 	t.Run("interactive get commands telnet", func(t *testing.T) {
 		r := &bytes.Buffer{}
-		r.WriteString(MockCommandHelpTELNET + "\n")
+		r.WriteString("help" + "\n")
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(CommandQuit + "\n")
 
-		err := Interactive(r, w, session.Session{Address: serverRCON.Addr(), Password: MockPasswordTELNET, Type: session.ProtocolTELNET})
+		err := Interactive(r, w, session.Session{Address: serverRCON.Addr(), Password: "password", Type: session.ProtocolTELNET})
 		assert.NoError(t, err)
 	})
 }
 
 func TestNewApp(t *testing.T) {
-	serverRCON := MustNewMockServerRCON()
-	defer serverRCON.MustClose()
+	serverRCON := rcontest.NewServer(
+		rcontest.SetSettings(rcontest.Settings{Password: "password"}),
+		rcontest.SetCommandHandler(handlersRCON),
+	)
+	defer serverRCON.Close()
 
 	// Test getting address and password from args. Config ang log are not used.
 	t.Run("getting address and password from args", func(t *testing.T) {
@@ -531,8 +653,8 @@ func TestNewApp(t *testing.T) {
 		app := NewApp(r, w)
 		args := os.Args[0:1]
 		args = append(args, "-a="+serverRCON.Addr())
-		args = append(args, "-p="+MockPasswordRCON)
-		args = append(args, "-c="+MockCommandHelpRCON)
+		args = append(args, "-p="+"password")
+		args = append(args, "-c="+"help")
 
 		err := app.Run(args)
 		assert.NoError(t, err)
@@ -541,7 +663,7 @@ func TestNewApp(t *testing.T) {
 	// Test getting address and password from config. Log is not used.
 	t.Run("getting address and password from args with log", func(t *testing.T) {
 		configFileName := "rcon-test-local.yaml"
-		stringBody := fmt.Sprintf(ConfigLayoutYAML, DefaultConfigEnv, serverRCON.Addr(), MockPasswordRCON, DefaultTestLogName, "")
+		stringBody := fmt.Sprintf(ConfigLayoutYAML, DefaultConfigEnv, serverRCON.Addr(), "password", DefaultTestLogName, "")
 		err := createFile(configFileName, stringBody)
 		assert.NoError(t, err)
 
@@ -559,7 +681,7 @@ func TestNewApp(t *testing.T) {
 		app := NewApp(r, w)
 		args := os.Args[0:1]
 		args = append(args, "-cfg="+configFileName)
-		args = append(args, "-c="+MockCommandHelpRCON)
+		args = append(args, "-c="+"help")
 
 		err = app.Run(args)
 		assert.NoError(t, err)
@@ -572,7 +694,7 @@ func TestNewApp(t *testing.T) {
 	//
 	//	app := NewApp(r, w)
 	//	args := os.Args[0:1]
-	//	args = append(args, "-c="+MockCommandHelpRCON)
+	//	args = append(args, "-c="+"help")
 	//
 	//	err := app.Run(args)
 	//	assert.Error(t, err)
@@ -584,7 +706,7 @@ func TestNewApp(t *testing.T) {
 	//// Test default config file is incorrect. Log is not used.
 	//t.Run("default config file is incorrect", func(t *testing.T) {
 	//	var configFileName = "rcon-test-local.yaml"
-	//	err := createInvalidConfigFile(configFileName, serverRCON.Addr(), MockPasswordRCON)
+	//	err := createInvalidConfigFile(configFileName, serverRCON.Addr(), "password")
 	//	assert.NoError(t, err)
 	//	defer func() {
 	//		err := os.Remove(configFileName)
@@ -597,7 +719,7 @@ func TestNewApp(t *testing.T) {
 	//	app := NewApp(r, w)
 	//	args := os.Args[0:1]
 	//	args = append(args, "-cfg="+configFileName)
-	//	args = append(args, "-c="+MockCommandHelpRCON)
+	//	args = append(args, "-c="+"help")
 	//
 	//	err = app.Run(args)
 	//	assert.EqualError(t, err, "read config error: yaml: line 1: did not find expected key")
@@ -612,7 +734,7 @@ func TestNewApp(t *testing.T) {
 		args := os.Args[0:1]
 		// Hack to use os.Args[0] in go run
 		args[0] = ""
-		args = append(args, "-c="+MockCommandHelpRCON)
+		args = append(args, "-c="+"help")
 
 		err := app.Run(args)
 		assert.EqualError(t, err, "address is not set: to set address add -a host:port")
@@ -628,7 +750,7 @@ func TestNewApp(t *testing.T) {
 		// Hack to use os.Args[0] in go run
 		args[0] = ""
 		args = append(args, "-a="+serverRCON.Addr())
-		args = append(args, "-c="+MockCommandHelpRCON)
+		args = append(args, "-c="+"help")
 
 		err := app.Run(args)
 		assert.EqualError(t, err, "password is not set: to set password add -p password")
@@ -642,9 +764,9 @@ func TestNewApp(t *testing.T) {
 		app := NewApp(r, w)
 		args := os.Args[0:1]
 		args = append(args, "-a="+serverRCON.Addr())
-		args = append(args, "-p="+MockPasswordRCON)
+		args = append(args, "-p="+"password")
 
-		r.WriteString(MockCommandHelpRCON + "\n")
+		r.WriteString("help" + "\n")
 		r.WriteString(CommandQuit + "\n")
 
 		err := app.Run(args)

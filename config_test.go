@@ -65,7 +65,7 @@ func TestNewConfig(t *testing.T) {
 
 	t.Run("file is incorrect", func(t *testing.T) {
 		configFileName := "rcon-test-local.yaml"
-		stringBody := fmt.Sprintf("address: \"%s\"\n  password: \"%s\"\n  log: \"%s\"", "", MockPasswordRCON, DefaultTestLogName)
+		stringBody := fmt.Sprintf("address: \"%s\"\n  password: \"%s\"\n  log: \"%s\"", "", "password", DefaultTestLogName)
 		createFile(configFileName, stringBody)
 		defer os.Remove(configFileName)
 
