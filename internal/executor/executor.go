@@ -35,14 +35,59 @@ func NewExecutor(r io.Reader, w io.Writer, version string) *Executor {
 		w:       w,
 	}
 
-	executor.init()
-
 	return &executor
 }
 
 // Run is the entry point to the cli app.
 func (executor *Executor) Run(arguments []string) error {
+	executor.init()
+
 	return executor.app.Run(arguments)
+}
+
+// NewSession parses os args and config file for connection details to
+// a remote server. If the address and password flags were received the
+// configuration file is ignored.
+func (executor *Executor) NewSession(c *cli.Context) (*session.Session, error) {
+	ses := session.Session{
+		Address:  c.GlobalString("a"),
+		Password: c.GlobalString("p"),
+		Log:      c.GlobalString("l"),
+		Type:     c.GlobalString("t"),
+	}
+
+	if ses.Address != "" && ses.Password != "" {
+		return &ses, nil
+	}
+
+	cfg, err := config.NewConfig(c.GlobalString("cfg"))
+	if err != nil {
+		return &ses, err
+	}
+
+	e := c.GlobalString("e")
+	if e == "" {
+		e = config.DefaultConfigEnv
+	}
+
+	// Get variables from config environment if flags are not defined.
+	if ses.Address == "" {
+		ses.Address = (*cfg)[e].Address
+	}
+
+	if ses.Password == "" {
+		ses.Password = (*cfg)[e].Password
+	}
+
+	if ses.Log == "" {
+		ses.Log = (*cfg)[e].Log
+	}
+
+	if ses.Type == "" {
+		ses.Type = (*cfg)[e].Type
+	}
+
+	return &ses, err
 }
 
 // init creates a new cli Application.
@@ -50,45 +95,43 @@ func (executor *Executor) init() {
 	app := cli.NewApp()
 	app.Usage = "CLI for executing queries on a remote server"
 	app.Description = "Can be run in two modes - in the mode of a single query" +
-		"\n   and in the mode of reading the input stream"
+		"\n   and in terminal mode of reading the input stream. To run terminal mode" +
+		"\n   just do not specify command to execute."
 	app.Version = executor.version
 	app.Copyright = "Copyright (c) 2020 Pavel Korotkiy (outdead)"
+	app.HideHelp = true
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name: "a, address",
-			Usage: "Set host and port to remote server. Example 127.0.0.1:16260" +
-				"\n                              can be set in the config file " + config.DefaultConfigName + ".",
+			Name:  "a, address",
+			Usage: "Set host and port to remote server. Example 127.0.0.1:16260",
 		},
 		cli.StringFlag{
-			Name: "p, password",
-			Usage: "Set password to remote server" +
-				"\n                               can be set in the config file " + config.DefaultConfigName + ".",
+			Name:  "p, password",
+			Usage: "Set password to remote server",
+		},
+		cli.StringFlag{
+			Name:  "t, type",
+			Usage: "Allows to specify type of connection. Default value is " + session.DefaultProtocol,
+		},
+		cli.StringFlag{
+			Name:  "l, log",
+			Usage: "Path and name of the log file. If not specified, it is taken from the config",
 		},
 		cli.StringFlag{
 			Name:  "c, command",
 			Usage: "Command to execute on remote server. Required flag to run in single mode",
 		},
 		cli.StringFlag{
-			Name: "e, env",
-			Usage: "Allows to select remote server address and password from the environment" +
-				"\n                              in the configuration file",
+			Name:  "e, env",
+			Usage: "Allows to select server credentials from selected environment in the configuration file",
 		},
 		cli.StringFlag{
-			Name:  "l, log",
-			Usage: "Path and name of the log file. if not specified, it is taken from the config.",
-		},
-		cli.StringFlag{
-			Name: "cfg",
-			Usage: "Allows to specify the path and name of the configuration file. The default" +
-				"\n                value is " + config.DefaultConfigName + ".",
-		},
-		cli.StringFlag{
-			Name:  "t, type",
-			Usage: "Allows to specify type of connection. The default value is " + session.DefaultProtocol + ".",
+			Name:  "cfg",
+			Usage: "Allows to specify the path and name of the configuration file. Default value is " + config.DefaultConfigName,
 		},
 	}
 	app.Action = func(c *cli.Context) error {
-		ses, err := GetCredentials(c)
+		ses, err := executor.NewSession(c)
 		if err != nil {
 			return err
 		}
@@ -113,7 +156,7 @@ func (executor *Executor) init() {
 }
 
 // Execute sends command to Execute to the remote server and prints the response.
-func Execute(w io.Writer, ses session.Session, command string) error {
+func Execute(w io.Writer, ses *session.Session, command string) error {
 	if command == "" {
 		return errors.New("command is not set")
 	}
@@ -148,7 +191,7 @@ func Execute(w io.Writer, ses session.Session, command string) error {
 
 // Interactive reads stdin, parses commands, executes them on remote server
 // and prints the responses.
-func Interactive(r io.Reader, w io.Writer, ses session.Session) error {
+func Interactive(r io.Reader, w io.Writer, ses *session.Session) error {
 	if ses.Address == "" {
 		fmt.Fprint(w, "Enter remote host and port [ip:port]: ")
 		fmt.Fscanln(r, &ses.Address)
@@ -190,52 +233,9 @@ func Interactive(r io.Reader, w io.Writer, ses session.Session) error {
 	return nil
 }
 
-// GetCredentials parses os args or config file for details of connecting to
-// a remote server. If the address and password flags were received, the
-// configuration file is ignored.
-func GetCredentials(c *cli.Context) (ses session.Session, err error) {
-	ses.Address = c.GlobalString("a")
-	ses.Password = c.GlobalString("p")
-	ses.Log = c.GlobalString("l")
-	ses.Type = c.GlobalString("t")
-
-	if ses.Address != "" && ses.Password != "" {
-		return ses, nil
-	}
-
-	cfg, err := config.NewConfig(c.GlobalString("cfg"))
-	if err != nil {
-		return ses, err
-	}
-
-	e := c.GlobalString("e")
-	if e == "" {
-		e = config.DefaultConfigEnv
-	}
-
-	// Get variables from config environment if flags are not defined.
-	if ses.Address == "" {
-		ses.Address = (*cfg)[e].Address
-	}
-
-	if ses.Password == "" {
-		ses.Password = (*cfg)[e].Password
-	}
-
-	if ses.Log == "" {
-		ses.Log = (*cfg)[e].Log
-	}
-
-	if ses.Type == "" {
-		ses.Type = (*cfg)[e].Type
-	}
-
-	return ses, err
-}
-
 // CheckCredentials sends auth request for remote server. Returns en error if
 // address or password is incorrect.
-func CheckCredentials(ses session.Session) error {
+func CheckCredentials(ses *session.Session) error {
 	if ses.Type == session.ProtocolWebRCON {
 		return websocket.CheckCredentials(ses.Address, ses.Password)
 	}

@@ -26,25 +26,17 @@ See [Changelog](CHANGELOG.md) for release details
 
 ```text
 USAGE:
-   rcon [global options] command [command options] [arguments...]
-
-COMMANDS:
-     help, h  Shows a list of commands or help for one command
+   rcon [global options] [commands...]
 
 GLOBAL OPTIONS:
-   -a value, --address value  set host and port to remote rcon server. Example 127.0.0.1:16260
-                              can be set in the config file rcon.yaml
-   -p value, --password value  set password to remote rcon server
-                               can be set in the config file rcon.yaml
-   -c value, --command value  command to execute on remote server. Required flag to run in single mode
-   -e value, --env value      allows to select remote server address and password from the environment
-                              in the configuration file
-   -l value, --log value  path and name of the log file. if not specified, it is taken from the config.
-   --cfg value            allows to specify the path and name of the configuration file. The default
-                value is rcon.yaml.
-   -t value, --type value  Allows to specify type of connection. The default value is rcon.
-   --help, -h     show help
-   --version, -v  print the version
+   -a value, --address value   Set host and port to remote server. Example 127.0.0.1:16260
+   -p value, --password value  Set password to remote server
+   -t value, --type value      Allows to specify type of connection. Default value is rcon
+   -l value, --log value       Path and name of the log file. If not specified, it is taken from the config
+   -c value, --command value   Command to execute on remote server. Required flag to run in single mode
+   -e value, --env value       Allows to select server credentials from selected environment in the configuration file
+   --cfg value                 Allows to specify the path and name of the configuration file. Default value is rcon.yaml
+   --version, -v               print the version
 ```
 
 Rcon CLI can be run in two modes - in the mode of a single query and in the mode of reading the input stream

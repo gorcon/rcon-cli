@@ -147,7 +147,7 @@ func TestExecute(t *testing.T) {
 	t.Run("empty address", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, session.Session{Address: "", Password: "password"}, "help")
+		err := executor.Execute(w, &session.Session{Address: "", Password: "password"}, "help")
 		assert.Error(t, err)
 	})
 
@@ -155,7 +155,7 @@ func TestExecute(t *testing.T) {
 	t.Run("empty password", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, session.Session{Address: serverRCON.Addr(), Password: ""}, "help")
+		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: ""}, "help")
 		assert.Error(t, err)
 	})
 
@@ -163,7 +163,7 @@ func TestExecute(t *testing.T) {
 	t.Run("wrong password", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, session.Session{Address: serverRCON.Addr(), Password: "wrong"}, "help")
+		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: "wrong"}, "help")
 		assert.Error(t, err)
 	})
 
@@ -171,7 +171,7 @@ func TestExecute(t *testing.T) {
 	t.Run("empty command", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, session.Session{Address: serverRCON.Addr(), Password: "password"}, "")
+		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: "password"}, "")
 		assert.Error(t, err)
 	})
 
@@ -180,7 +180,7 @@ func TestExecute(t *testing.T) {
 		w := &bytes.Buffer{}
 
 		bigCommand := make([]byte, 1001)
-		err := executor.Execute(w, session.Session{Address: serverRCON.Addr(), Password: "password"}, string(bigCommand))
+		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: "password"}, string(bigCommand))
 		assert.Error(t, err)
 	})
 
@@ -188,7 +188,7 @@ func TestExecute(t *testing.T) {
 	t.Run("no error rcon", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, session.Session{Address: serverRCON.Addr(), Password: "password"}, "help")
+		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: "password"}, "help")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
@@ -199,7 +199,7 @@ func TestExecute(t *testing.T) {
 	t.Run("no error telnet", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, session.Session{Address: serverTELNET.Addr(), Password: "password", Type: session.ProtocolTELNET}, "help")
+		err := executor.Execute(w, &session.Session{Address: serverTELNET.Addr(), Password: "password", Type: session.ProtocolTELNET}, "help")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
@@ -212,7 +212,7 @@ func TestExecute(t *testing.T) {
 	t.Run("no error web", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, session.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: session.ProtocolWebRCON}, "status")
+		err := executor.Execute(w, &session.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: session.ProtocolWebRCON}, "status")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
@@ -229,7 +229,7 @@ func TestExecute(t *testing.T) {
 			assert.NoError(t, err)
 		}()
 
-		err := executor.Execute(w, session.Session{Address: serverRCON.Addr(), Password: "password", Log: logFileName}, "help")
+		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: "password", Log: logFileName}, "help")
 		assert.NoError(t, err)
 	})
 
@@ -284,7 +284,7 @@ func TestExecute(t *testing.T) {
 
 			w := &bytes.Buffer{}
 
-			err := executor.Execute(w, session.Session{Address: addr, Password: password}, "help")
+			err := executor.Execute(w, &session.Session{Address: addr, Password: password}, "help")
 			assert.NoError(t, err)
 
 			result := strings.TrimSuffix(w.String(), "\n")
@@ -435,7 +435,7 @@ of your current perk levels in a CSV file next to it.
 
 			w := &bytes.Buffer{}
 
-			err := executor.Execute(w, session.Session{Address: addr, Password: password, Type: session.ProtocolTELNET}, "help")
+			err := executor.Execute(w, &session.Session{Address: addr, Password: password, Type: session.ProtocolTELNET}, "help")
 			assert.NoError(t, err)
 
 			result := strings.TrimSuffix(w.String(), "\n")
@@ -452,7 +452,7 @@ of your current perk levels in a CSV file next to it.
 		t.Run("rust server rcon", func(t *testing.T) {
 			w := &bytes.Buffer{}
 
-			err := executor.Execute(w, session.Session{Address: addr, Password: password}, "status")
+			err := executor.Execute(w, &session.Session{Address: addr, Password: password}, "status")
 			assert.NoError(t, err)
 			assert.NotEmpty(t, w.String())
 
@@ -467,7 +467,7 @@ of your current perk levels in a CSV file next to it.
 		t.Run("rust server web", func(t *testing.T) {
 			w := &bytes.Buffer{}
 
-			err := executor.Execute(w, session.Session{Address: addr, Password: password, Type: session.ProtocolWebRCON}, "status")
+			err := executor.Execute(w, &session.Session{Address: addr, Password: password, Type: session.ProtocolWebRCON}, "status")
 			assert.NoError(t, err)
 			assert.NotEmpty(t, w.String())
 
@@ -499,7 +499,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(&r, w, session.Session{Address: serverRCON.Addr(), Password: "fake"})
+		err := executor.Interactive(&r, w, &session.Session{Address: serverRCON.Addr(), Password: "fake"})
 		assert.Error(t, err)
 	})
 
@@ -511,7 +511,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(&r, w, session.Session{Address: "", Password: "password"})
+		err := executor.Interactive(&r, w, &session.Session{Address: "", Password: "password"})
 		assert.NoError(t, err)
 	})
 
@@ -523,7 +523,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(&r, w, session.Session{Address: serverRCON.Addr(), Password: ""})
+		err := executor.Interactive(&r, w, &session.Session{Address: serverRCON.Addr(), Password: ""})
 		assert.NoError(t, err)
 	})
 
@@ -536,7 +536,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(r, w, session.Session{Address: serverRCON.Addr(), Password: "password"})
+		err := executor.Interactive(r, w, &session.Session{Address: serverRCON.Addr(), Password: "password"})
 		assert.NoError(t, err)
 	})
 
@@ -549,7 +549,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(r, w, session.Session{Address: serverTELNET.Addr(), Password: "password", Type: session.ProtocolTELNET})
+		err := executor.Interactive(r, w, &session.Session{Address: serverTELNET.Addr(), Password: "password", Type: session.ProtocolTELNET})
 		assert.NoError(t, err)
 	})
 
@@ -562,7 +562,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(r, w, session.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: session.ProtocolWebRCON})
+		err := executor.Interactive(r, w, &session.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: session.ProtocolWebRCON})
 		assert.NoError(t, err)
 	})
 }
