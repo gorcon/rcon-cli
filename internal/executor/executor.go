@@ -3,6 +3,7 @@ package executor
 import (
 	"bufio"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"strings"
@@ -42,7 +43,11 @@ func NewExecutor(r io.Reader, w io.Writer, version string) *Executor {
 func (executor *Executor) Run(arguments []string) error {
 	executor.init()
 
-	return executor.app.Run(arguments)
+	if err := executor.app.Run(arguments); err != nil && !errors.Is(err, flag.ErrHelp) {
+		return err
+	}
+
+	return nil
 }
 
 // NewSession parses os args and config file for connection details to

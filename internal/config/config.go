@@ -58,30 +58,23 @@ func NewConfig(name string) (*Config, error) {
 // ParseFromFile reads a configuration file from disk and loads its contents into
 // the application's config structure. YAML and JSON files are supported.
 func (cfg *Config) ParseFromFile(name string) error {
-	if name == "" {
-		home, err := filepath.Abs(filepath.Dir(os.Args[0]))
-		if err != nil {
-			return err
-		}
-
-		name = home + "/" + DefaultConfigName
+	if name != "" {
+		return cfg.parse(name)
 	}
 
-	file, err := ioutil.ReadFile(name)
+	home, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		return err
 	}
 
-	switch ext := path.Ext(name); ext {
-	case ".yml", ".yaml":
-		err = yaml.Unmarshal(file, cfg)
-	case ".json":
-		err = json.Unmarshal(file, cfg)
-	default:
-		err = fmt.Errorf("%w %s", ErrUnsupportedFileExt, ext)
+	name = home + "/" + DefaultConfigName
+	if err := cfg.parse(name); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
 
-	return err
+	*cfg = Config{"default": {Log: "rcon-default.log"}}
+
+	return nil
 }
 
 // Validate validates the config fields.
@@ -99,4 +92,22 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+func (cfg *Config) parse(name string) error {
+	file, err := ioutil.ReadFile(name)
+	if err != nil {
+		return err
+	}
+
+	switch ext := path.Ext(name); ext {
+	case ".yml", ".yaml":
+		err = yaml.Unmarshal(file, cfg)
+	case ".json":
+		err = json.Unmarshal(file, cfg)
+	default:
+		err = fmt.Errorf("%w %s", ErrUnsupportedFileExt, ext)
+	}
+
+	return err
 }

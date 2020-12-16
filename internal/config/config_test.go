@@ -62,11 +62,10 @@ func TestNewConfig(t *testing.T) {
 	// Expected error message: `read config error: open /tmp/rcon.yaml: no such file or directory`.
 	t.Run("default file not exists", func(t *testing.T) {
 		cfg, err := config.NewConfig("")
-		if !errors.Is(err, os.ErrNotExist) {
-			t.Errorf("unexpected error: %v", err)
-		}
+		assert.Nil(t, err)
 
-		assert.Nil(t, cfg)
+		want := &config.Config{"default": {Log: "rcon-default.log"}}
+		assert.Equal(t, want, cfg)
 	})
 
 	t.Run("file is incorrect", func(t *testing.T) {
