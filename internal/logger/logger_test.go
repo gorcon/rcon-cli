@@ -60,10 +60,7 @@ func TestGetLogFile(t *testing.T) {
 			assert.NoError(t, err)
 			return
 		}
-		defer func() {
-			err := os.RemoveAll(logDir)
-			assert.NoError(t, err)
-		}()
+		defer os.RemoveAll(logDir)
 
 		file, err := logger.GetLogFile(logPath)
 		assert.Nil(t, file)
@@ -76,10 +73,7 @@ func TestGetLogFile(t *testing.T) {
 			assert.NoError(t, err)
 			return
 		}
-		defer func() {
-			err := os.RemoveAll(logDir)
-			assert.NoError(t, err)
-		}()
+		defer os.RemoveAll(logDir)
 
 		file, err := logger.GetLogFile(logPath)
 		assert.Nil(t, file)

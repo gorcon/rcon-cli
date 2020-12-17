@@ -72,7 +72,7 @@ func (cfg *Config) ParseFromFile(name string) error {
 		return err
 	}
 
-	*cfg = Config{"default": {Log: "rcon-default.log"}}
+	*cfg = Config{DefaultConfigEnv: {}}
 
 	return nil
 }

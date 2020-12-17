@@ -64,7 +64,7 @@ func TestNewConfig(t *testing.T) {
 		cfg, err := config.NewConfig("")
 		assert.Nil(t, err)
 
-		want := &config.Config{"default": {Log: "rcon-default.log"}}
+		want := &config.Config{config.DefaultConfigEnv: {}}
 		assert.Equal(t, want, cfg)
 	})
 
