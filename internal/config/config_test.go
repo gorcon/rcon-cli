@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/gorcon/rcon-cli/internal/config"
-	"github.com/gorcon/rcon-cli/internal/session"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +24,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Remove(configFileName)
 
 		expected := config.Config{
-			"default": session.Session{Address: "", Password: "", Log: "rcon-test.log"},
+			"default": config.Session{Address: "", Password: "", Log: "rcon-test.log"},
 		}
 
 		cfg, err := config.NewConfig(configFileName)
@@ -40,7 +39,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Remove(configFileName)
 
 		expected := config.Config{
-			config.DefaultConfigEnv: session.Session{Address: "", Password: "", Log: DefaultTestLogName},
+			config.DefaultConfigEnv: config.Session{Address: "", Password: "", Log: DefaultTestLogName},
 		}
 
 		cfg, err := config.NewConfig(configFileName)
@@ -102,7 +101,7 @@ func TestNewConfig(t *testing.T) {
 		assert.EqualError(t, err, "config validation error: unsupported type in default environment")
 
 		expected := config.Config{
-			config.DefaultConfigEnv: session.Session{Address: "", Password: "", Log: DefaultTestLogName, Type: "pigeon post"},
+			config.DefaultConfigEnv: config.Session{Address: "", Password: "", Log: DefaultTestLogName, Type: "pigeon post"},
 		}
 
 		assert.Equal(t, &expected, cfg)

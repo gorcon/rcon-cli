@@ -9,7 +9,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/gorcon/rcon-cli/internal/session"
 	"gopkg.in/yaml.v3"
 )
 
@@ -39,7 +38,7 @@ var (
 //   address: "127.0.0.1:16260"
 //   password: "password"
 // ```.
-type Config map[string]session.Session
+type Config map[string]Session
 
 // NewConfig finds and parses config file with remote server credentials.
 func NewConfig(name string) (*Config, error) {
@@ -85,7 +84,7 @@ func (cfg *Config) Validate() error {
 
 	for key, ses := range *cfg {
 		switch ses.Type {
-		case "", session.ProtocolRCON, session.ProtocolTELNET, session.ProtocolWebRCON:
+		case "", ProtocolRCON, ProtocolTELNET, ProtocolWebRCON:
 		default:
 			return fmt.Errorf("%w: unsupported type in %s environment", ErrConfigValidation, key)
 		}

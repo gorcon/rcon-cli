@@ -13,7 +13,6 @@ import (
 	"github.com/gorcon/rcon-cli/internal/proto/rcon"
 	"github.com/gorcon/rcon-cli/internal/proto/telnet"
 	"github.com/gorcon/rcon-cli/internal/proto/websocket"
-	"github.com/gorcon/rcon-cli/internal/session"
 	"github.com/urfave/cli"
 )
 
@@ -53,8 +52,8 @@ func (executor *Executor) Run(arguments []string) error {
 // NewSession parses os args and config file for connection details to
 // a remote server. If the address and password flags were received the
 // configuration file is ignored.
-func (executor *Executor) NewSession(c *cli.Context) (*session.Session, error) {
-	ses := session.Session{
+func (executor *Executor) NewSession(c *cli.Context) (*config.Session, error) {
+	ses := config.Session{
 		Address:  c.GlobalString("a"),
 		Password: c.GlobalString("p"),
 		Log:      c.GlobalString("l"),
@@ -116,7 +115,7 @@ func (executor *Executor) init() {
 		},
 		cli.StringFlag{
 			Name:  "t, type",
-			Usage: "Allows to specify type of connection. Default value is " + session.DefaultProtocol,
+			Usage: "Allows to specify type of connection. Default value is " + config.DefaultProtocol,
 		},
 		cli.StringFlag{
 			Name:  "l, log",
@@ -161,7 +160,7 @@ func (executor *Executor) init() {
 }
 
 // Execute sends command to Execute to the remote server and prints the response.
-func Execute(w io.Writer, ses *session.Session, command string) error {
+func Execute(w io.Writer, ses *config.Session, command string) error {
 	if command == "" {
 		return errors.New("command is not set")
 	}
@@ -170,9 +169,9 @@ func Execute(w io.Writer, ses *session.Session, command string) error {
 	var err error
 
 	switch ses.Type {
-	case session.ProtocolTELNET:
+	case config.ProtocolTELNET:
 		result, err = telnet.Execute(ses.Address, ses.Password, command)
-	case session.ProtocolWebRCON:
+	case config.ProtocolWebRCON:
 		result, err = websocket.Execute(ses.Address, ses.Password, command)
 	default:
 		result, err = rcon.Execute(ses.Address, ses.Password, command)
@@ -196,14 +195,14 @@ func Execute(w io.Writer, ses *session.Session, command string) error {
 
 // Interactive reads stdin, parses commands, executes them on remote server
 // and prints the responses.
-func Interactive(r io.Reader, w io.Writer, ses *session.Session) error {
+func Interactive(r io.Reader, w io.Writer, ses *config.Session) error {
 	if ses.Address == "" {
 		fmt.Fprint(w, "Enter remote host and port [ip:port]: ")
 		fmt.Fscanln(r, &ses.Address)
 	}
 
 	switch ses.Type {
-	case session.ProtocolTELNET:
+	case config.ProtocolTELNET:
 		return telnet.Interactive(r, w, ses.Address, ses.Password)
 	default:
 		// Default type is RCON.
@@ -240,8 +239,8 @@ func Interactive(r io.Reader, w io.Writer, ses *session.Session) error {
 
 // CheckCredentials sends auth request for remote server. Returns en error if
 // address or password is incorrect.
-func CheckCredentials(ses *session.Session) error {
-	if ses.Type == session.ProtocolWebRCON {
+func CheckCredentials(ses *config.Session) error {
+	if ses.Type == config.ProtocolWebRCON {
 		return websocket.CheckCredentials(ses.Address, ses.Password)
 	}
 

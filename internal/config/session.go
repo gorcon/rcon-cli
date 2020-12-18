@@ -1,4 +1,4 @@
-package session
+package config
 
 // Allowed protocols.
 const (

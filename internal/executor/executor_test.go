@@ -15,7 +15,6 @@ import (
 	"github.com/gorcon/rcon"
 	"github.com/gorcon/rcon-cli/internal/config"
 	"github.com/gorcon/rcon-cli/internal/executor"
-	"github.com/gorcon/rcon-cli/internal/session"
 	"github.com/gorcon/rcon/rcontest"
 	"github.com/gorcon/telnet"
 	"github.com/gorcon/telnet/telnettest"
@@ -147,7 +146,7 @@ func TestExecute(t *testing.T) {
 	t.Run("empty address", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, &session.Session{Address: "", Password: "password"}, "help")
+		err := executor.Execute(w, &config.Session{Address: "", Password: "password"}, "help")
 		assert.Error(t, err)
 	})
 
@@ -155,7 +154,7 @@ func TestExecute(t *testing.T) {
 	t.Run("empty password", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: ""}, "help")
+		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: ""}, "help")
 		assert.Error(t, err)
 	})
 
@@ -163,7 +162,7 @@ func TestExecute(t *testing.T) {
 	t.Run("wrong password", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: "wrong"}, "help")
+		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "wrong"}, "help")
 		assert.Error(t, err)
 	})
 
@@ -171,7 +170,7 @@ func TestExecute(t *testing.T) {
 	t.Run("empty command", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: "password"}, "")
+		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "password"}, "")
 		assert.Error(t, err)
 	})
 
@@ -180,7 +179,7 @@ func TestExecute(t *testing.T) {
 		w := &bytes.Buffer{}
 
 		bigCommand := make([]byte, 1001)
-		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: "password"}, string(bigCommand))
+		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "password"}, string(bigCommand))
 		assert.Error(t, err)
 	})
 
@@ -188,7 +187,7 @@ func TestExecute(t *testing.T) {
 	t.Run("no error rcon", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: "password"}, "help")
+		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "password"}, "help")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
@@ -199,7 +198,7 @@ func TestExecute(t *testing.T) {
 	t.Run("no error telnet", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, &session.Session{Address: serverTELNET.Addr(), Password: "password", Type: session.ProtocolTELNET}, "help")
+		err := executor.Execute(w, &config.Session{Address: serverTELNET.Addr(), Password: "password", Type: config.ProtocolTELNET}, "help")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
@@ -212,7 +211,7 @@ func TestExecute(t *testing.T) {
 	t.Run("no error web", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, &session.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: session.ProtocolWebRCON}, "status")
+		err := executor.Execute(w, &config.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: config.ProtocolWebRCON}, "status")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
@@ -224,12 +223,9 @@ func TestExecute(t *testing.T) {
 		w := &bytes.Buffer{}
 
 		logFileName := "tmpfile.log"
-		defer func() {
-			err := os.Remove(logFileName)
-			assert.NoError(t, err)
-		}()
+		defer os.Remove(logFileName)
 
-		err := executor.Execute(w, &session.Session{Address: serverRCON.Addr(), Password: "password", Log: logFileName}, "help")
+		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "password", Log: logFileName}, "help")
 		assert.NoError(t, err)
 	})
 
@@ -284,7 +280,7 @@ func TestExecute(t *testing.T) {
 
 			w := &bytes.Buffer{}
 
-			err := executor.Execute(w, &session.Session{Address: addr, Password: password}, "help")
+			err := executor.Execute(w, &config.Session{Address: addr, Password: password}, "help")
 			assert.NoError(t, err)
 
 			result := strings.TrimSuffix(w.String(), "\n")
@@ -435,7 +431,7 @@ of your current perk levels in a CSV file next to it.
 
 			w := &bytes.Buffer{}
 
-			err := executor.Execute(w, &session.Session{Address: addr, Password: password, Type: session.ProtocolTELNET}, "help")
+			err := executor.Execute(w, &config.Session{Address: addr, Password: password, Type: config.ProtocolTELNET}, "help")
 			assert.NoError(t, err)
 
 			result := strings.TrimSuffix(w.String(), "\n")
@@ -452,7 +448,7 @@ of your current perk levels in a CSV file next to it.
 		t.Run("rust server rcon", func(t *testing.T) {
 			w := &bytes.Buffer{}
 
-			err := executor.Execute(w, &session.Session{Address: addr, Password: password}, "status")
+			err := executor.Execute(w, &config.Session{Address: addr, Password: password}, "status")
 			assert.NoError(t, err)
 			assert.NotEmpty(t, w.String())
 
@@ -467,7 +463,7 @@ of your current perk levels in a CSV file next to it.
 		t.Run("rust server web", func(t *testing.T) {
 			w := &bytes.Buffer{}
 
-			err := executor.Execute(w, &session.Session{Address: addr, Password: password, Type: session.ProtocolWebRCON}, "status")
+			err := executor.Execute(w, &config.Session{Address: addr, Password: password, Type: config.ProtocolWebRCON}, "status")
 			assert.NoError(t, err)
 			assert.NotEmpty(t, w.String())
 
@@ -499,7 +495,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(&r, w, &session.Session{Address: serverRCON.Addr(), Password: "fake"})
+		err := executor.Interactive(&r, w, &config.Session{Address: serverRCON.Addr(), Password: "fake"})
 		assert.Error(t, err)
 	})
 
@@ -511,7 +507,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(&r, w, &session.Session{Address: "", Password: "password"})
+		err := executor.Interactive(&r, w, &config.Session{Address: "", Password: "password"})
 		assert.NoError(t, err)
 	})
 
@@ -523,7 +519,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(&r, w, &session.Session{Address: serverRCON.Addr(), Password: ""})
+		err := executor.Interactive(&r, w, &config.Session{Address: serverRCON.Addr(), Password: ""})
 		assert.NoError(t, err)
 	})
 
@@ -536,7 +532,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(r, w, &session.Session{Address: serverRCON.Addr(), Password: "password"})
+		err := executor.Interactive(r, w, &config.Session{Address: serverRCON.Addr(), Password: "password"})
 		assert.NoError(t, err)
 	})
 
@@ -549,7 +545,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(r, w, &session.Session{Address: serverTELNET.Addr(), Password: "password", Type: session.ProtocolTELNET})
+		err := executor.Interactive(r, w, &config.Session{Address: serverTELNET.Addr(), Password: "password", Type: config.ProtocolTELNET})
 		assert.NoError(t, err)
 	})
 
@@ -562,7 +558,7 @@ func TestInteractive(t *testing.T) {
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(r, w, &session.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: session.ProtocolWebRCON})
+		err := executor.Interactive(r, w, &config.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: config.ProtocolWebRCON})
 		assert.NoError(t, err)
 	})
 }
@@ -612,44 +608,6 @@ func TestNewExecutor(t *testing.T) {
 		err := app.Run(args)
 		assert.NoError(t, err)
 	})
-
-	//// Test default config file not exist. Log is not used.
-	//t.Run("default config file not exist", func(t *testing.T) {
-	//	r := &bytes.Buffer{}
-	//	w := &bytes.Buffer{}
-	//
-	//	app := NewApp(r, w)
-	//	args := os.Args[0:1]
-	//	args = append(args, "-c="+"help")
-	//
-	//	err := app.Run(args)
-	//	assert.Error(t, err)
-	//	if !errors.Is(err, os.ErrNotExist) {
-	//		t.Errorf("unexpected error: %v", err)
-	//	}
-	//})
-
-	//// Test default config file is incorrect. Log is not used.
-	//t.Run("default config file is incorrect", func(t *testing.T) {
-	//	var configFileName = "rcon-test-local.yaml"
-	//	err := createInvalidConfigFile(configFileName, serverRCON.Addr(), "password")
-	//	assert.NoError(t, err)
-	//	defer func() {
-	//		err := os.Remove(configFileName)
-	//		assert.NoError(t, err)
-	//	}()
-	//
-	//	r := &bytes.Buffer{}
-	//	w := &bytes.Buffer{}
-	//
-	//	app := NewApp(r, w)
-	//	args := os.Args[0:1]
-	//	args = append(args, "-cfg="+configFileName)
-	//	args = append(args, "-c="+"help")
-	//
-	//	err = app.Run(args)
-	//	assert.EqualError(t, err, "read config error: yaml: line 1: did not find expected key")
-	//})
 
 	// Test empty address and password. Log is not used.
 	t.Run("empty address and password", func(t *testing.T) {
