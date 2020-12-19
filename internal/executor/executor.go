@@ -186,7 +186,7 @@ func Execute(w io.Writer, ses *config.Session, command string) error {
 		return err
 	}
 
-	if err := logger.AddLog(ses.Log, ses.Address, command, result); err != nil {
+	if err := logger.Write(ses.Log, ses.Address, command, result); err != nil {
 		return fmt.Errorf("log error: %s", err)
 	}
 
