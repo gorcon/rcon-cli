@@ -21,7 +21,7 @@ func OpenFile(name string) (file *os.File, err error) {
 
 	switch _, err = os.Stat(name); {
 	case err == nil:
-		file, err = os.OpenFile(name, os.O_APPEND|os.O_WRONLY, 0777)
+		file, err = os.OpenFile(name, os.O_APPEND|os.O_WRONLY, 0666)
 	case os.IsNotExist(err):
 		file, err = os.Create(name)
 	}
