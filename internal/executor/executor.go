@@ -19,11 +19,20 @@ import (
 // CommandQuit is the command for exit from Interactive mode.
 const CommandQuit = ":q"
 
+// AttemptsLimit is the limit value for the number of attempts to obtain user
+// data in terminal mode.
+const AttemptsLimit = 3
+
 // Single mode validation errors.
 var (
 	ErrEmptyAddress  = errors.New("address is not set: to set address add -a host:port")
 	ErrEmptyPassword = errors.New("password is not set: to set password add -p password")
 	ErrCommandEmpty  = errors.New("command is not set")
+)
+
+// Terminal mode validation errors.
+var (
+	ErrToManyFails = errors.New("to many fails")
 )
 
 // Executor is a cli commands execute wrapper.
@@ -213,6 +222,8 @@ func Interactive(r io.Reader, w io.Writer, ses *config.Session) error {
 		fmt.Fscanln(r, &ses.Password)
 	}
 
+	var attempt int
+
 Loop:
 	for {
 		if ses.Type == "" {
@@ -246,9 +257,14 @@ Loop:
 				fmt.Fprint(w, "> ")
 			}
 		default:
+			attempt++
 			ses.Type = ""
 			fmt.Fprintf(w, "Unsupported protocol type. Allowed %q, %q and %q protocols\n",
 				config.ProtocolRCON, config.ProtocolWebRCON, config.ProtocolTELNET)
+
+			if attempt >= AttemptsLimit {
+				return ErrToManyFails
+			}
 		}
 	}
 

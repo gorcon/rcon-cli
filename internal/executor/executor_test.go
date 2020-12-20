@@ -488,6 +488,8 @@ func TestInteractive(t *testing.T) {
 	serverWebRCON := httptest.NewServer(handlersWebRCON())
 	defer serverWebRCON.Close()
 
+	// TODO: Add results check.
+
 	// Test wrong password.
 	t.Run("wrong password", func(t *testing.T) {
 		var r bytes.Buffer
@@ -499,66 +501,81 @@ func TestInteractive(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	// Test get Interactive address.
-	t.Run("get address", func(t *testing.T) {
+	// Test to many fails.
+	t.Run("to many fails", func(t *testing.T) {
 		var r bytes.Buffer
-		r.WriteString(serverRCON.Addr() + "\n")
+		r.WriteString("wrong" + "\n")
+		r.WriteString("wrong" + "\n")
+		r.WriteString("wrong" + "\n")
 		r.WriteString(executor.CommandQuit + "\n")
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(&r, w, &config.Session{Address: "", Password: "password"})
-		assert.NoError(t, err)
+		err := executor.Interactive(&r, w, &config.Session{Address: serverRCON.Addr(), Password: "password"})
+		assert.EqualError(t, err, executor.ErrToManyFails.Error())
 	})
 
-	// Test get Interactive password.
-	t.Run("get password", func(t *testing.T) {
-		var r bytes.Buffer
+	// Test long command.
+	t.Run("long command", func(t *testing.T) {
+		r := bytes.Buffer{}
+		r.WriteString(serverRCON.Addr() + "\n")
 		r.WriteString("password" + "\n")
+		r.WriteString(config.ProtocolRCON + "\n")
+		r.WriteString(string(make([]byte, 1001)) + "\n")
+		r.WriteString("unknown command" + "\n")
 		r.WriteString(executor.CommandQuit + "\n")
 
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Interactive(&r, w, &config.Session{Address: serverRCON.Addr(), Password: ""})
-		assert.NoError(t, err)
+		err := executor.Interactive(&r, &w, &config.Session{Address: serverRCON.Addr(), Password: "password"})
+		assert.EqualError(t, err, "command too long")
 	})
 
 	// Test get Interactive commands RCON.
 	t.Run("get commands rcon", func(t *testing.T) {
 		r := &bytes.Buffer{}
+		r.WriteString(serverRCON.Addr() + "\n")
+		r.WriteString("password" + "\n")
+		r.WriteString(config.ProtocolRCON + "\n")
 		r.WriteString("help" + "\n")
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(executor.CommandQuit + "\n")
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(r, w, &config.Session{Address: serverRCON.Addr(), Password: "password"})
+		err := executor.Interactive(r, w, &config.Session{})
 		assert.NoError(t, err)
 	})
 
 	// Test get Interactive commands TELNET.
 	t.Run("get commands telnet", func(t *testing.T) {
 		r := &bytes.Buffer{}
+		r.WriteString(serverTELNET.Addr() + "\n")
+		r.WriteString("password" + "\n")
+		r.WriteString(config.ProtocolTELNET + "\n")
 		r.WriteString("help" + "\n")
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(executor.CommandQuit + "\n")
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(r, w, &config.Session{Address: serverTELNET.Addr(), Password: "password", Type: config.ProtocolTELNET})
+		err := executor.Interactive(r, w, &config.Session{})
 		assert.NoError(t, err)
 	})
 
 	// Test get Interactive commands WEB RCON.
 	t.Run("get commands web", func(t *testing.T) {
 		r := &bytes.Buffer{}
+		r.WriteString(serverWebRCON.Listener.Addr().String() + "\n")
+		r.WriteString("password" + "\n")
+		r.WriteString(config.ProtocolWebRCON + "\n")
 		r.WriteString("help" + "\n")
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(executor.CommandQuit + "\n")
 
 		w := &bytes.Buffer{}
 
-		err := executor.Interactive(r, w, &config.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: config.ProtocolWebRCON})
+		err := executor.Interactive(r, w, &config.Session{})
 		assert.NoError(t, err)
 	})
 }
@@ -672,6 +689,7 @@ func TestNewExecutor(t *testing.T) {
 		args = append(args, "-a="+serverRCON.Addr())
 		args = append(args, "-p="+"password")
 
+		r.WriteString("\n")
 		r.WriteString("help" + "\n")
 		r.WriteString(executor.CommandQuit + "\n")
 
