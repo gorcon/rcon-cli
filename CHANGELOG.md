@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 - Added config JSON format supporting. 
 - Added protocol type asking in interactive mode.
 - Added protocol type validation in interactive mode.
+- Added the ability to send several commands in a row with one request #10
+
+### Changed
+- Removed `-c value, --command value` flag. It replaced to commands without flags.
+- Flag `--cfg value` replaced to `-c value, --config value` flag. 
 
 ## [v0.8.1] - 2020-11-17
 ### Added

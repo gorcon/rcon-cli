@@ -29,7 +29,7 @@ const ConfigLayoutYAML = "%s:\n  address: %s\n  password: %s\n  log: %s\n  type:
 func handlersRCON(c *rcontest.Context) {
 	switch c.Request().Body() {
 	case "help":
-		responseBody := "lorem ipsum dolor sit amet"
+		responseBody := "Can I help you?"
 		rcon.NewPacket(rcon.SERVERDATA_RESPONSE_VALUE, c.Request().ID, responseBody).WriteTo(c.Conn())
 	default:
 		rcon.NewPacket(rcon.SERVERDATA_RESPONSE_VALUE, c.Request().ID, "unknown command").WriteTo(c.Conn())
@@ -41,7 +41,7 @@ func handlersTELNET(c *telnettest.Context) {
 	case "", "exit":
 	case "help":
 		c.Writer().WriteString(fmt.Sprintf("2020-11-14T23:09:20 31220.643 "+telnet.ResponseINFLayout, c.Request(), c.Conn().RemoteAddr()) + telnet.CRLF)
-		c.Writer().WriteString("lorem ipsum dolor sit amet" + telnet.CRLF)
+		c.Writer().WriteString("Can I help you?" + telnet.CRLF)
 	default:
 		c.Writer().WriteString(fmt.Sprintf("*** ERROR: unknown command '%s'", c.Request()) + telnet.CRLF)
 	}
@@ -187,23 +187,23 @@ func TestExecute(t *testing.T) {
 	t.Run("no error rcon", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "password"}, "help")
+		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "password"}, "help", "unknown")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
-		assert.Equal(t, "lorem ipsum dolor sit amet", result)
+		assert.Equal(t, "Can I help you?\n"+executor.CommandsResponseSeparator+"\nunknown command", result)
 	})
 
 	// Positive TELNET test Execute func.
 	t.Run("no error telnet", func(t *testing.T) {
 		w := &bytes.Buffer{}
 
-		err := executor.Execute(w, &config.Session{Address: serverTELNET.Addr(), Password: "password", Type: config.ProtocolTELNET}, "help")
+		err := executor.Execute(w, &config.Session{Address: serverTELNET.Addr(), Password: "password", Type: config.ProtocolTELNET}, "help", "unknown")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
-		if !strings.Contains(result, "lorem ipsum dolor sit amet") {
-			assert.Equal(t, "lorem ipsum dolor sit amet", result)
+		if !strings.Contains(result, "Can I help you?\n"+executor.CommandsResponseSeparator+"\n*** ERROR: unknown command 'unknown'") {
+			assert.Equal(t, "Can I help you?\n"+executor.CommandsResponseSeparator+"\n*** ERROR: unknown command 'unknown'", result)
 		}
 	})
 
@@ -596,7 +596,7 @@ func TestNewExecutor(t *testing.T) {
 		args := os.Args[0:1]
 		args = append(args, "-a="+serverRCON.Addr())
 		args = append(args, "-p="+"password")
-		args = append(args, "-c="+"help")
+		args = append(args, "help")
 
 		err := app.Run(args)
 		assert.NoError(t, err)
@@ -619,8 +619,8 @@ func TestNewExecutor(t *testing.T) {
 
 		app := executor.NewExecutor(r, w, "")
 		args := os.Args[0:1]
-		args = append(args, "-cfg="+configFileName)
-		args = append(args, "-c="+"help")
+		args = append(args, "-c="+configFileName)
+		args = append(args, "help")
 
 		err := app.Run(args)
 		assert.NoError(t, err)
@@ -645,8 +645,8 @@ func TestNewExecutor(t *testing.T) {
 		args := os.Args[0:1]
 		// Hack to use os.Args[0] in go run
 		args[0] = ""
-		args = append(args, "-cfg="+configFileName)
-		args = append(args, "-c="+"help")
+		args = append(args, "-c="+configFileName)
+		args = append(args, "help")
 
 		err := app.Run(args)
 		assert.EqualError(t, err, "address is not set: to set address add -a host:port")
@@ -672,8 +672,8 @@ func TestNewExecutor(t *testing.T) {
 		// Hack to use os.Args[0] in go run
 		args[0] = ""
 		args = append(args, "-a="+serverRCON.Addr())
-		args = append(args, "-cfg="+configFileName)
-		args = append(args, "-c="+"help")
+		args = append(args, "-c="+configFileName)
+		args = append(args, "help")
 
 		err := app.Run(args)
 		assert.EqualError(t, err, "password is not set: to set password add -p password")

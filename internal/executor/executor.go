@@ -6,6 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gorcon/rcon-cli/internal/config"
@@ -23,16 +25,27 @@ const CommandQuit = ":q"
 // data in terminal mode.
 const AttemptsLimit = 3
 
-// Single mode validation errors.
-var (
-	ErrEmptyAddress  = errors.New("address is not set: to set address add -a host:port")
-	ErrEmptyPassword = errors.New("password is not set: to set password add -p password")
-	ErrCommandEmpty  = errors.New("command is not set")
-)
+// CommandsResponseSeparator is symbols that is written between responses of
+// several commands if more than one command was called.
+// TODO: Add to config.
+const CommandsResponseSeparator = "--------"
 
-// Terminal mode validation errors.
+// Errors.
 var (
+	// ErrEmptyAddress is returned when executed command without setting address
+	// in single mode.
+	ErrEmptyAddress = errors.New("address is not set: to set address add -a host:port")
+
+	// ErrEmptyAddress is returned when executed command without setting password
+	// in single mode.
+	ErrEmptyPassword = errors.New("password is not set: to set password add -p password")
+
+	// ErrToManyFails is returned in terminal mode when exceeding the limit of
+	// user data retrieval attempts.
 	ErrToManyFails = errors.New("to many fails")
+
+	// ErrCommandEmpty is returned when executed command length equal 0.
+	ErrCommandEmpty = errors.New("command is not set")
 )
 
 // Executor is a cli commands execute wrapper.
@@ -70,22 +83,22 @@ func (executor *Executor) Run(arguments []string) error {
 // configuration file is ignored.
 func (executor *Executor) NewSession(c *cli.Context) (*config.Session, error) {
 	ses := config.Session{
-		Address:  c.String("a"),
-		Password: c.String("p"),
-		Type:     c.String("t"),
-		Log:      c.String("l"),
+		Address:  c.String("address"),
+		Password: c.String("password"),
+		Type:     c.String("type"),
+		Log:      c.String("log"),
 	}
 
 	if ses.Address != "" && ses.Password != "" {
 		return &ses, nil
 	}
 
-	cfg, err := config.NewConfig(c.String("cfg"))
+	cfg, err := config.NewConfig(c.String("config"))
 	if err != nil {
 		return &ses, err
 	}
 
-	e := c.String("e")
+	e := c.String("env")
 	if e == "" {
 		e = config.DefaultConfigEnv
 	}
@@ -114,9 +127,12 @@ func (executor *Executor) NewSession(c *cli.Context) (*config.Session, error) {
 func (executor *Executor) init() {
 	app := cli.NewApp()
 	app.Usage = "CLI for executing queries on a remote server"
-	app.Description = "Can be run in two modes - in the mode of a single query" +
-		"\nand in terminal mode of reading the input stream. To run terminal mode" +
-		"\njust do not specify command to execute."
+	app.Description = "Can be run in two modes - in the mode of a single query and in terminal mode of reading the " +
+		"input stream. \n\n" +
+		"To run single mode type commands after options flags. Example: \n" +
+		filepath.Base(os.Args[0]) + " -a 127.0.0.1:16260 -p password command1 command2 \n\n" +
+		"To run terminal mode just do not specify commands to execute. Example: \n" +
+		filepath.Base(os.Args[0]) + " -a 127.0.0.1:16260 -p password"
 	app.Version = executor.version
 	app.Copyright = "Copyright (c) 2020 Pavel Korotkiy (outdead)"
 	app.HideHelpCommand = true
@@ -134,7 +150,7 @@ func (executor *Executor) init() {
 		&cli.StringFlag{
 			Name:    "type",
 			Aliases: []string{"t"},
-			Usage:   "Allows to specify type of connection. Default value is " + config.DefaultProtocol,
+			Usage:   "Allows to specify type of connection (default: " + config.DefaultProtocol + ")",
 		},
 		&cli.StringFlag{
 			Name:    "log",
@@ -142,18 +158,15 @@ func (executor *Executor) init() {
 			Usage:   "Path and name of the log file. If not specified, it is taken from the config",
 		},
 		&cli.StringFlag{
-			Name:    "command",
+			Name:    "config",
 			Aliases: []string{"c"},
-			Usage:   "Command to execute on remote server. Required flag to run in single mode",
+			Usage:   "Path and name of the configuration file (default: " + config.DefaultConfigName + ")",
 		},
 		&cli.StringFlag{
 			Name:    "env",
 			Aliases: []string{"e"},
-			Usage:   "Allows to select server credentials from selected environment in the configuration file",
-		},
-		&cli.StringFlag{
-			Name:  "cfg",
-			Usage: "Allows to specify the path and name of the configuration file. Default value is " + config.DefaultConfigName,
+			Usage: "Select the environment in the configuration file with server credentials (default: " +
+				config.DefaultConfigEnv + ")",
 		},
 	}
 	app.Action = func(c *cli.Context) error {
@@ -162,8 +175,8 @@ func (executor *Executor) init() {
 			return err
 		}
 
-		command := c.String("command")
-		if command == "" {
+		commands := c.Args().Slice()
+		if len(commands) == 0 {
 			return Interactive(executor.r, executor.w, ses)
 		}
 
@@ -175,41 +188,52 @@ func (executor *Executor) init() {
 			return ErrEmptyPassword
 		}
 
-		return Execute(executor.w, ses, command)
+		return Execute(executor.w, ses, commands...)
 	}
 
 	executor.app = app
 }
 
 // Execute sends command to Execute to the remote server and prints the response.
-func Execute(w io.Writer, ses *config.Session, command string) error {
-	if command == "" {
+func Execute(w io.Writer, ses *config.Session, commands ...string) error {
+	if len(commands) == 0 {
 		return ErrCommandEmpty
 	}
 
-	var result string
-	var err error
+	for i, command := range commands {
+		if command == "" {
+			return ErrCommandEmpty
+		}
 
-	switch ses.Type {
-	case config.ProtocolTELNET:
-		result, err = telnet.Execute(ses.Address, ses.Password, command)
-	case config.ProtocolWebRCON:
-		result, err = websocket.Execute(ses.Address, ses.Password, command)
-	default:
-		result, err = rcon.Execute(ses.Address, ses.Password, command)
-	}
+		var result string
+		var err error
 
-	if result != "" {
-		result = strings.TrimSpace(result)
-		fmt.Fprintln(w, result)
-	}
+		// TODO: Add interface with stored remote executor client and us it for each command.
+		switch ses.Type {
+		case config.ProtocolTELNET:
+			result, err = telnet.Execute(ses.Address, ses.Password, command)
+		case config.ProtocolWebRCON:
+			result, err = websocket.Execute(ses.Address, ses.Password, command)
+		default:
+			result, err = rcon.Execute(ses.Address, ses.Password, command)
+		}
 
-	if err != nil {
-		return err
-	}
+		if result != "" {
+			result = strings.TrimSpace(result)
+			fmt.Fprintln(w, result)
+		}
 
-	if err := logger.Write(ses.Log, ses.Address, command, result); err != nil {
-		return fmt.Errorf("write log error: %w", err)
+		if err != nil {
+			return err
+		}
+
+		if err := logger.Write(ses.Log, ses.Address, command, result); err != nil {
+			return fmt.Errorf("write log error: %w", err)
+		}
+
+		if i+1 != len(commands) {
+			fmt.Fprintln(w, CommandsResponseSeparator)
+		}
 	}
 
 	return nil

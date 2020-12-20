@@ -26,32 +26,37 @@ See [Changelog](CHANGELOG.md) for release details
 
 ```text
 USAGE:
-   rcon [global options] [commands...]
+   rcon [options] [commands...]
 
 GLOBAL OPTIONS:
-   -a value, --address value   Set host and port to remote server. Example 127.0.0.1:16260
-   -p value, --password value  Set password to remote server
-   -t value, --type value      Allows to specify type of connection. Default value is rcon
-   -l value, --log value       Path and name of the log file. If not specified, it is taken from the config
-   -c value, --command value   Command to execute on remote server. Required flag to run in single mode
-   -e value, --env value       Allows to select server credentials from selected environment in the configuration file
-   --cfg value                 Allows to specify the path and name of the configuration file. Default value is rcon.yaml
-   --version, -v               print the version
+   --address value, -a value   Set host and port to remote server. Example 127.0.0.1:16260
+   --password value, -p value  Set password to remote server
+   --type value, -t value      Allows to specify type of connection (default: rcon)
+   --log value, -l value       Path and name of the log file. If not specified, it is taken from the config
+   --config value, -c value       Path and name of the configuration file (default: rcon.yaml)
+   --env value, -e value       Select the environment in the configuration file with server credentials (default: default)
+   --help, -h                  show help (default: false)
+   --version, -v               print the version (default: false)
+
 ```
 
 Rcon CLI can be run in two modes - in the mode of a single query and in the mode of reading the input stream
 
 ### Single mode
 
-Server address, password and command to server must be specified in flags at startup. Example:
+Server address, password and command to server must be specified in flags at startup. Example:  
 
-    ./rcon -a 127.0.0.1:16260 -p mypassword -c help
+    ./rcon -a 127.0.0.1:16260 -p mypassword command
     
-If arguments are passed they will sent as a single command. The response will displayed, and the CLI will exit.
+Since from `rcon-cli` 0.9.0 version it is possible to send several commands in one request. Example:  
+
+    ./rcon -a 127.0.0.1:16260 -p mypassword command "command with several words" 'command "with double quotes"'
+
+If commands are passed they will sent in a single mode. The response will displayed, and the CLI will exit.
 
 ### Interactive input stream mode
 
-To run CLI in interactive mode run `rcon` without `-c` argument. Example:
+To run CLI in interactive mode run `rcon` without commands. Example:
 
     ./rcon -a 127.0.0.1:16260 -p mypassword
     
@@ -63,8 +68,8 @@ For more convenient use, the ability to create the rcon.yaml configuration file 
 You can save the host and port of the remote server and its password. If the configuration file exists, 
 and in it the default block is filled, then at startup the -a and -p flags can be omitted. Examples:
 
-    ./rcon -a 127.0.0.1:16260 -c players
-    ./rcon -c status
+    ./rcon -a 127.0.0.1:16260 players
+    ./rcon status
     ./rcon -p mypassword
     ./rcon 
 
@@ -94,12 +99,12 @@ rust:
 
 You can choose the environment at the start:
 
-    ./rcon -e rust -c status
+    ./rcon -e rust status
     ./rcon -e zomboid
     
 And set custom config file     
 
-    ./rcon --cfg /path/to/config/file.yaml
+    ./rcon -c /path/to/config/file.yaml
     
 You can use `-l` argument to specify path to log file.
 
@@ -108,12 +113,12 @@ You can use `-l` argument to specify path to log file.
 Since from `rcon-cli` 0.7.0 version support for the TELNET protocol has been added. On this protocol remote access to 
 the 7 Days to Die console is based. You can use `-t telnet` argument to specify the protocol type.
 
-     ./rcon -a 172.19.0.2:8081 -p password -t telnet -c version
+     ./rcon -a 172.19.0.2:8081 -p password -t telnet version
      
 Since from `rcon-cli` 0.8.0 version support for the Web RCON protocol has been added. On this protocol remote access to 
 the Rust console is based. You can use `-t web` argument to specify the protocol type.
 
-     ./rcon -a 127.0.0.1:28016 -p password -t web -c status
+     ./rcon -a 127.0.0.1:28016 -p password -t web status
 
 ## Contribute
 
