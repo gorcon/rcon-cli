@@ -31,10 +31,10 @@ USAGE:
 GLOBAL OPTIONS:
    --address value, -a value   Set host and port to remote server. Example 127.0.0.1:16260
    --password value, -p value  Set password to remote server
-   --type value, -t value      Allows to specify type of connection (default: rcon)
-   --log value, -l value       Path and name of the log file. If not specified, it is taken from the config
-   --config value, -c value    Path and name of the configuration file (default: rcon.yaml)
-   --env value, -e value       Select the environment in the configuration file with server credentials (default: default)
+   --type value, -t value      Specify type of connection (default: rcon)
+   --log value, -l value       Path to the log file. If not specified it is taken from the config
+   --config value, -c value    Path to the configuration file (default: rcon.yaml)
+   --env value, -e value       Config environment with server credentials (default: default)
    --help, -h                  show help (default: false)
    --version, -v               print the version (default: false)
 ```

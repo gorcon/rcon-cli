@@ -150,23 +150,22 @@ func (executor *Executor) init() {
 		&cli.StringFlag{
 			Name:    "type",
 			Aliases: []string{"t"},
-			Usage:   "Allows to specify type of connection (default: " + config.DefaultProtocol + ")",
+			Usage:   "Specify type of connection (default: " + config.DefaultProtocol + ")",
 		},
 		&cli.StringFlag{
 			Name:    "log",
 			Aliases: []string{"l"},
-			Usage:   "Path and name of the log file. If not specified, it is taken from the config",
+			Usage:   "Path to the log file. If not specified it is taken from the config",
 		},
 		&cli.StringFlag{
 			Name:    "config",
 			Aliases: []string{"c"},
-			Usage:   "Path and name of the configuration file (default: " + config.DefaultConfigName + ")",
+			Usage:   "Path to the configuration file (default: " + config.DefaultConfigName + ")",
 		},
 		&cli.StringFlag{
 			Name:    "env",
 			Aliases: []string{"e"},
-			Usage: "Select the environment in the configuration file with server credentials (default: " +
-				config.DefaultConfigEnv + ")",
+			Usage:   "Config environment with server credentials (default: " + config.DefaultConfigEnv + ")",
 		},
 	}
 	app.Action = func(c *cli.Context) error {
