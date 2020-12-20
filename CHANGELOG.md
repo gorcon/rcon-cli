@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+
+## [v0.9.0] - 2020-12-20
 ### Added
 - Added config validation. 
 - Added config JSON format supporting. 
@@ -84,7 +86,8 @@ than entry in configuration file.
 ### Added
 - Initial implementation.
 
-[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.9.0...HEAD
+[v0.9.0]: https://github.com/gorcon/rcon-cli/compare/v0.8.1...v0.9.0
 [v0.8.1]: https://github.com/gorcon/rcon-cli/compare/v0.8.0-beta.2...v0.8.1
 [v0.8.0-beta.2]: https://github.com/gorcon/rcon-cli/compare/v0.8.0-beta...v0.8.0-beta.2
 [v0.8.0-beta]: https://github.com/gorcon/rcon-cli/compare/v0.7.0...v0.8.0-beta
