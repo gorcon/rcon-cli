@@ -33,11 +33,10 @@ GLOBAL OPTIONS:
    --password value, -p value  Set password to remote server
    --type value, -t value      Allows to specify type of connection (default: rcon)
    --log value, -l value       Path and name of the log file. If not specified, it is taken from the config
-   --config value, -c value       Path and name of the configuration file (default: rcon.yaml)
+   --config value, -c value    Path and name of the configuration file (default: rcon.yaml)
    --env value, -e value       Select the environment in the configuration file with server credentials (default: default)
    --help, -h                  show help (default: false)
    --version, -v               print the version (default: false)
-
 ```
 
 Rcon CLI can be run in two modes - in the mode of a single query and in the mode of reading the input stream
