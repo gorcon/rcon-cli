@@ -13,7 +13,7 @@ import (
 	"github.com/gorcon/rcon-cli/internal/proto/rcon"
 	"github.com/gorcon/rcon-cli/internal/proto/telnet"
 	"github.com/gorcon/rcon-cli/internal/proto/websocket"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // CommandQuit is the command for exit from Interactive mode.
@@ -70,22 +70,22 @@ func (executor *Executor) Run(arguments []string) error {
 // configuration file is ignored.
 func (executor *Executor) NewSession(c *cli.Context) (*config.Session, error) {
 	ses := config.Session{
-		Address:  c.GlobalString("a"),
-		Password: c.GlobalString("p"),
-		Type:     c.GlobalString("t"),
-		Log:      c.GlobalString("l"),
+		Address:  c.String("a"),
+		Password: c.String("p"),
+		Type:     c.String("t"),
+		Log:      c.String("l"),
 	}
 
 	if ses.Address != "" && ses.Password != "" {
 		return &ses, nil
 	}
 
-	cfg, err := config.NewConfig(c.GlobalString("cfg"))
+	cfg, err := config.NewConfig(c.String("cfg"))
 	if err != nil {
 		return &ses, err
 	}
 
-	e := c.GlobalString("e")
+	e := c.String("e")
 	if e == "" {
 		e = config.DefaultConfigEnv
 	}
@@ -115,37 +115,43 @@ func (executor *Executor) init() {
 	app := cli.NewApp()
 	app.Usage = "CLI for executing queries on a remote server"
 	app.Description = "Can be run in two modes - in the mode of a single query" +
-		"\n   and in terminal mode of reading the input stream. To run terminal mode" +
-		"\n   just do not specify command to execute."
+		"\nand in terminal mode of reading the input stream. To run terminal mode" +
+		"\njust do not specify command to execute."
 	app.Version = executor.version
 	app.Copyright = "Copyright (c) 2020 Pavel Korotkiy (outdead)"
-	app.HideHelp = true
+	app.HideHelpCommand = true
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "a, address",
-			Usage: "Set host and port to remote server. Example 127.0.0.1:16260",
+		&cli.StringFlag{
+			Name:    "address",
+			Aliases: []string{"a"},
+			Usage:   "Set host and port to remote server. Example 127.0.0.1:16260",
 		},
-		cli.StringFlag{
-			Name:  "p, password",
-			Usage: "Set password to remote server",
+		&cli.StringFlag{
+			Name:    "password",
+			Aliases: []string{"p"},
+			Usage:   "Set password to remote server",
 		},
-		cli.StringFlag{
-			Name:  "t, type",
-			Usage: "Allows to specify type of connection. Default value is " + config.DefaultProtocol,
+		&cli.StringFlag{
+			Name:    "type",
+			Aliases: []string{"t"},
+			Usage:   "Allows to specify type of connection. Default value is " + config.DefaultProtocol,
 		},
-		cli.StringFlag{
-			Name:  "l, log",
-			Usage: "Path and name of the log file. If not specified, it is taken from the config",
+		&cli.StringFlag{
+			Name:    "log",
+			Aliases: []string{"l"},
+			Usage:   "Path and name of the log file. If not specified, it is taken from the config",
 		},
-		cli.StringFlag{
-			Name:  "c, command",
-			Usage: "Command to execute on remote server. Required flag to run in single mode",
+		&cli.StringFlag{
+			Name:    "command",
+			Aliases: []string{"c"},
+			Usage:   "Command to execute on remote server. Required flag to run in single mode",
 		},
-		cli.StringFlag{
-			Name:  "e, env",
-			Usage: "Allows to select server credentials from selected environment in the configuration file",
+		&cli.StringFlag{
+			Name:    "env",
+			Aliases: []string{"e"},
+			Usage:   "Allows to select server credentials from selected environment in the configuration file",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "cfg",
 			Usage: "Allows to specify the path and name of the configuration file. Default value is " + config.DefaultConfigName,
 		},
