@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Added config validation. 
 - Added config JSON format supporting. 
+- Added protocol type asking in interactive mode.
+- Added protocol type validation in interactive mode.
 
 ## [v0.8.1] - 2020-11-17
 ### Added

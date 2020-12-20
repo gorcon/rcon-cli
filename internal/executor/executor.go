@@ -19,6 +19,13 @@ import (
 // CommandQuit is the command for exit from Interactive mode.
 const CommandQuit = ":q"
 
+// Single mode validation errors.
+var (
+	ErrEmptyAddress  = errors.New("address is not set: to set address add -a host:port")
+	ErrEmptyPassword = errors.New("password is not set: to set password add -p password")
+	ErrCommandEmpty  = errors.New("command is not set")
+)
+
 // Executor is a cli commands execute wrapper.
 type Executor struct {
 	version string
@@ -56,8 +63,8 @@ func (executor *Executor) NewSession(c *cli.Context) (*config.Session, error) {
 	ses := config.Session{
 		Address:  c.GlobalString("a"),
 		Password: c.GlobalString("p"),
-		Log:      c.GlobalString("l"),
 		Type:     c.GlobalString("t"),
+		Log:      c.GlobalString("l"),
 	}
 
 	if ses.Address != "" && ses.Password != "" {
@@ -146,11 +153,11 @@ func (executor *Executor) init() {
 		}
 
 		if ses.Address == "" {
-			return errors.New("address is not set: to set address add -a host:port")
+			return ErrEmptyAddress
 		}
 
 		if ses.Password == "" {
-			return errors.New("password is not set: to set password add -p password")
+			return ErrEmptyPassword
 		}
 
 		return Execute(executor.w, ses, command)
@@ -162,7 +169,7 @@ func (executor *Executor) init() {
 // Execute sends command to Execute to the remote server and prints the response.
 func Execute(w io.Writer, ses *config.Session, command string) error {
 	if command == "" {
-		return errors.New("command is not set")
+		return ErrCommandEmpty
 	}
 
 	var result string
@@ -187,7 +194,7 @@ func Execute(w io.Writer, ses *config.Session, command string) error {
 	}
 
 	if err := logger.Write(ses.Log, ses.Address, command, result); err != nil {
-		return fmt.Errorf("log error: %s", err)
+		return fmt.Errorf("write log error: %w", err)
 	}
 
 	return nil
@@ -201,36 +208,47 @@ func Interactive(r io.Reader, w io.Writer, ses *config.Session) error {
 		fmt.Fscanln(r, &ses.Address)
 	}
 
-	switch ses.Type {
-	case config.ProtocolTELNET:
-		return telnet.Interactive(r, w, ses.Address, ses.Password)
-	default:
-		// Default type is RCON.
-		if ses.Password == "" {
-			fmt.Fprint(w, "Enter password: ")
-			fmt.Fscanln(r, &ses.Password)
+	if ses.Password == "" {
+		fmt.Fprint(w, "Enter password: ")
+		fmt.Fscanln(r, &ses.Password)
+	}
+
+Loop:
+	for {
+		if ses.Type == "" {
+			fmt.Fprint(w, "Enter protocol type (empty for rcon): ")
+			fmt.Fscanln(r, &ses.Type)
 		}
 
-		if err := CheckCredentials(ses); err != nil {
-			return err
-		}
-
-		fmt.Fprintf(w, "Waiting commands for %s (or type %s to exit)\n> ", ses.Address, CommandQuit)
-
-		scanner := bufio.NewScanner(r)
-		for scanner.Scan() {
-			command := scanner.Text()
-			if command != "" {
-				if command == CommandQuit {
-					break
-				}
-
-				if err := Execute(w, ses, command); err != nil {
-					return err
-				}
+		switch ses.Type {
+		case config.ProtocolTELNET:
+			return telnet.Interactive(r, w, ses.Address, ses.Password)
+		case "", config.ProtocolRCON, config.ProtocolWebRCON:
+			if err := CheckCredentials(ses); err != nil {
+				return err
 			}
 
-			fmt.Fprint(w, "> ")
+			fmt.Fprintf(w, "Waiting commands for %s (or type %s to exit)\n> ", ses.Address, CommandQuit)
+
+			scanner := bufio.NewScanner(r)
+			for scanner.Scan() {
+				command := scanner.Text()
+				if command != "" {
+					if command == CommandQuit {
+						break Loop
+					}
+
+					if err := Execute(w, ses, command); err != nil {
+						return err
+					}
+				}
+
+				fmt.Fprint(w, "> ")
+			}
+		default:
+			ses.Type = ""
+			fmt.Fprintf(w, "Unsupported protocol type. Allowed %q, %q and %q protocols\n",
+				config.ProtocolRCON, config.ProtocolWebRCON, config.ProtocolTELNET)
 		}
 	}
 

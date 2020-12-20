@@ -1,16 +1,12 @@
 package rcon
 
-import (
-	"errors"
-
-	"github.com/gorcon/rcon"
-)
+import "github.com/gorcon/rcon"
 
 // Execute sends command to Execute to the remote server and returns
 // the response.
 func Execute(address string, password string, command string) (string, error) {
 	if command == "" {
-		return "", errors.New("command is not set")
+		return "", rcon.ErrCommandEmpty
 	}
 
 	console, err := rcon.Dial(address, password)

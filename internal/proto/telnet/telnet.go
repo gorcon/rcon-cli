@@ -1,7 +1,6 @@
 package telnet
 
 import (
-	"errors"
 	"io"
 
 	"github.com/gorcon/telnet"
@@ -11,7 +10,7 @@ import (
 // the response.
 func Execute(address string, password string, command string) (string, error) {
 	if command == "" {
-		return "", errors.New("command is not set")
+		return "", telnet.ErrCommandEmpty
 	}
 
 	console, err := telnet.Dial(address, password)
