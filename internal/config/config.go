@@ -96,7 +96,7 @@ func (cfg *Config) Validate() error {
 func (cfg *Config) parse(name string) error {
 	file, err := ioutil.ReadFile(name)
 	if err != nil {
-		return err
+		return fmt.Errorf("read file: %w", err)
 	}
 
 	switch ext := path.Ext(name); ext {
