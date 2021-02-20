@@ -1,6 +1,10 @@
 package websocket
 
-import "github.com/gorcon/websocket"
+import (
+	"fmt"
+
+	"github.com/gorcon/websocket"
+)
 
 // Execute sends command to Execute to the remote server and returns
 // the response.
@@ -11,7 +15,7 @@ func Execute(address string, password string, command string) (string, error) {
 
 	console, err := websocket.Dial(address, password)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("websocket: %w", err)
 	}
 	defer console.Close()
 
@@ -23,7 +27,7 @@ func Execute(address string, password string, command string) (string, error) {
 func CheckCredentials(address string, password string) error {
 	console, err := websocket.Dial(address, password)
 	if err != nil {
-		return err
+		return fmt.Errorf("websocket: %w", err)
 	}
 
 	return console.Close()

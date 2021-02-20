@@ -95,7 +95,7 @@ func (executor *Executor) NewSession(c *cli.Context) (*config.Session, error) {
 
 	cfg, err := config.NewConfig(c.String("config"))
 	if err != nil {
-		return &ses, err
+		return &ses, fmt.Errorf("config: %w", err)
 	}
 
 	e := c.String("env")
@@ -227,7 +227,7 @@ func Execute(w io.Writer, ses *config.Session, commands ...string) error {
 		}
 
 		if err := logger.Write(ses.Log, ses.Address, command, result); err != nil {
-			return fmt.Errorf("write log error: %w", err)
+			return fmt.Errorf("log: %w", err)
 		}
 
 		if i+1 != len(commands) {

@@ -1,6 +1,7 @@
 package telnet
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/gorcon/telnet"
@@ -15,7 +16,7 @@ func Execute(address string, password string, command string) (string, error) {
 
 	console, err := telnet.Dial(address, password)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("telnet: %w", err)
 	}
 	defer console.Close()
 
@@ -34,7 +35,7 @@ func Interactive(r io.Reader, w io.Writer, address string, password string) erro
 func CheckCredentials(address string, password string) error {
 	console, err := telnet.Dial(address, password)
 	if err != nil {
-		return err
+		return fmt.Errorf("telnet: %w", err)
 	}
 
 	return console.Close()

@@ -44,7 +44,7 @@ type Config map[string]Session
 func NewConfig(name string) (*Config, error) {
 	cfg := new(Config)
 	if err := cfg.ParseFromFile(name); err != nil {
-		return nil, fmt.Errorf("read config error: %w", err)
+		return nil, fmt.Errorf("parse file: %w", err)
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -63,7 +63,7 @@ func (cfg *Config) ParseFromFile(name string) error {
 
 	home, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		return err
+		return fmt.Errorf("get abs path: %w", err)
 	}
 
 	name = home + "/" + DefaultConfigName
