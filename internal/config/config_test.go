@@ -58,7 +58,7 @@ func TestNewConfig(t *testing.T) {
 
 	// Test is valid because of automatic placement of a temporary binary to the
 	// `/tmp` directory.
-	// Expected error message: `read config error: open /tmp/rcon.yaml: no such file or directory`.
+	// Expected error message: `parse file: yaml: open /tmp/rcon.yaml: no such file or directory`.
 	t.Run("default file not exists", func(t *testing.T) {
 		cfg, err := config.NewConfig("")
 		assert.Nil(t, err)
@@ -74,7 +74,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Remove(configFileName)
 
 		cfg, err := config.NewConfig(configFileName)
-		assert.EqualError(t, err, "read config error: yaml: line 1: did not find expected key")
+		assert.EqualError(t, err, "parse file: yaml: line 1: did not find expected key")
 
 		assert.Nil(t, cfg)
 	})
@@ -86,7 +86,7 @@ func TestNewConfig(t *testing.T) {
 		defer os.Remove(configFileName)
 
 		cfg, err := config.NewConfig(configFileName)
-		assert.EqualError(t, err, "read config error: unsupported file extension .ini")
+		assert.EqualError(t, err, "parse file: unsupported file extension .ini")
 
 		assert.Nil(t, cfg)
 	})
