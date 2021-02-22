@@ -528,7 +528,7 @@ func TestInteractive(t *testing.T) {
 		w := bytes.Buffer{}
 
 		err := executor.Interactive(&r, &w, &config.Session{Address: serverRCON.Addr(), Password: "password"})
-		assert.EqualError(t, err, "command too long")
+		assert.EqualError(t, err, "execute: command too long")
 	})
 
 	// Test get Interactive commands RCON.
@@ -649,7 +649,7 @@ func TestNewExecutor(t *testing.T) {
 		args = append(args, "help")
 
 		err := app.Run(args)
-		assert.EqualError(t, err, "address is not set: to set address add -a host:port")
+		assert.EqualError(t, err, "cli: address is not set: to set address add -a host:port")
 	})
 
 	// Test empty password. Log is not used.
@@ -676,7 +676,7 @@ func TestNewExecutor(t *testing.T) {
 		args = append(args, "help")
 
 		err := app.Run(args)
-		assert.EqualError(t, err, "password is not set: to set password add -p password")
+		assert.EqualError(t, err, "cli: password is not set: to set password add -p password")
 	})
 
 	// Positive test Interactive. Log is not used.
