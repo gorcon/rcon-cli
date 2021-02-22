@@ -72,7 +72,7 @@ func (executor *Executor) Run(arguments []string) error {
 	executor.init()
 
 	if err := executor.app.Run(arguments); err != nil && !errors.Is(err, flag.ErrHelp) {
-		return err
+		return fmt.Errorf("cli: %w", err)
 	}
 
 	return nil
@@ -120,7 +120,7 @@ func (executor *Executor) NewSession(c *cli.Context) (*config.Session, error) {
 		ses.Type = (*cfg)[e].Type
 	}
 
-	return &ses, err
+	return &ses, nil
 }
 
 // init creates a new cli Application.
@@ -223,7 +223,7 @@ func Execute(w io.Writer, ses *config.Session, commands ...string) error {
 		}
 
 		if err != nil {
-			return err
+			return fmt.Errorf("execute: %w", err)
 		}
 
 		if err := logger.Write(ses.Log, ses.Address, command, result); err != nil {
