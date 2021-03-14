@@ -3,6 +3,7 @@
 [![top level coverage](https://gocover.io/_badge/github.com/gorcon/rcon-cli?0)](https://gocover.io/github.com/gorcon/rcon-cli)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gorcon/rcon-cli)](https://goreportcard.com/report/github.com/gorcon/rcon-cli)
 [![GitHub All Releases](https://img.shields.io/github/downloads/gorcon/rcon-cli/total)](https://github.com/gorcon/rcon-cli/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/outdead/rcon.svg)](https://hub.docker.com/r/outdead/rcon)
 
 CLI for executing queries on a remote [Source dedicated game server](https://developer.valvesoftware.com/wiki/Source_Dedicated_Server), using the [RCON](https://developer.valvesoftware.com/wiki/Source_RCON_Protocol) protocol.
 
@@ -21,6 +22,10 @@ Open pull request if you have successfully used a package with another game with
 Download the binary for your platform from the [latest releases](https://github.com/gorcon/rcon-cli/releases/latest)
 
 See [Changelog](CHANGELOG.md) for release details
+
+### Docker
+
+    docker pull outdead/rcon
 
 ## Usage
 

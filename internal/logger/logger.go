@@ -25,12 +25,14 @@ func OpenFile(name string) (file *os.File, err error) {
 	switch _, err = os.Stat(name); {
 	case err == nil:
 		file, err = os.OpenFile(name, os.O_APPEND|os.O_WRONLY, 0666)
+		if err != nil {
+			return file, fmt.Errorf("open: %w", err)
+		}
 	case os.IsNotExist(err):
 		file, err = os.Create(name)
-	}
-
-	if err != nil {
-		return file, fmt.Errorf("open: %w", err)
+		if err != nil {
+			return file, fmt.Errorf("create: %w", err)
+		}
 	}
 
 	return file, nil
