@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.9.2] - 2021-03-14
+### Added
+- Added docker hub integration. 
+
 ## [v0.9.1] - 2021-03-14
 ### Added
 - Added Dockerfile. 
@@ -93,7 +97,8 @@ than entry in configuration file.
 ### Added
 - Initial implementation.
 
-[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.9.2...HEAD
+[v0.9.1]: https://github.com/gorcon/rcon-cli/compare/v0.9.1...v0.9.2
 [v0.9.1]: https://github.com/gorcon/rcon-cli/compare/v0.9.0...v0.9.1
 [v0.9.0]: https://github.com/gorcon/rcon-cli/compare/v0.8.1...v0.9.0
 [v0.8.1]: https://github.com/gorcon/rcon-cli/compare/v0.8.0-beta.2...v0.8.1

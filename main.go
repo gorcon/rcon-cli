@@ -9,7 +9,7 @@ import (
 
 // Version displays service version in semantic versioning (http://semver.org/).
 // Can be replaced while compiling with flag `-ldflags "-X main.Version=${VERSION}"`.
-var Version = "0.0.0-develop"
+var Version = "develop"
 
 func main() {
 	e := executor.NewExecutor(os.Stdin, os.Stdout, Version)
