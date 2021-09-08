@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+### Added
+- Added `--skip, -s` flag, allowed to skip error on multiple commands or in terminal mode.
 
 ## [v0.9.1] - 2021-03-14
 ### Added

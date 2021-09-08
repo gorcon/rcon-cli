@@ -40,6 +40,7 @@ GLOBAL OPTIONS:
    --log value, -l value       Path to the log file. If not specified it is taken from the config
    --config value, -c value    Path to the configuration file (default: rcon.yaml)
    --env value, -e value       Config environment with server credentials (default: default)
+   --skip, -s                  Skip errors and run next command (default: false)   
    --help, -h                  show help (default: false)
    --version, -v               print the version (default: false)
 ```

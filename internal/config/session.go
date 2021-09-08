@@ -17,6 +17,7 @@ type Session struct {
 	Password string `json:"password" yaml:"password"`
 	// Log is the name of the file to which requests will be logged.
 	// If not specified, no logging will be performed.
-	Log  string `json:"log" yaml:"log"`
-	Type string `json:"type" yaml:"type"`
+	Log        string `json:"log" yaml:"log"`
+	Type       string `json:"type" yaml:"type"`
+	SkipErrors bool   `json:"skip_errors" yaml:"skip_errors"`
 }

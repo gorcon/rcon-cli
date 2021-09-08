@@ -83,10 +83,11 @@ func (executor *Executor) Run(arguments []string) error {
 // configuration file is ignored.
 func (executor *Executor) NewSession(c *cli.Context) (*config.Session, error) {
 	ses := config.Session{
-		Address:  c.String("address"),
-		Password: c.String("password"),
-		Type:     c.String("type"),
-		Log:      c.String("log"),
+		Address:    c.String("address"),
+		Password:   c.String("password"),
+		Type:       c.String("type"),
+		Log:        c.String("log"),
+		SkipErrors: c.Bool("skip"),
 	}
 
 	if ses.Address != "" && ses.Password != "" {
@@ -128,13 +129,12 @@ func (executor *Executor) init() {
 	app := cli.NewApp()
 	app.Usage = "CLI for executing queries on a remote server"
 	app.Description = "Can be run in two modes - in the mode of a single query and in terminal mode of reading the " +
-		"input stream. \n\n" +
-		"To run single mode type commands after options flags. Example: \n" +
+		"input stream. \n\n" + "To run single mode type commands after options flags. Example: \n" +
 		filepath.Base(os.Args[0]) + " -a 127.0.0.1:16260 -p password command1 command2 \n\n" +
 		"To run terminal mode just do not specify commands to execute. Example: \n" +
 		filepath.Base(os.Args[0]) + " -a 127.0.0.1:16260 -p password"
 	app.Version = executor.version
-	app.Copyright = "Copyright (c) 2020 Pavel Korotkiy (outdead)"
+	app.Copyright = "Copyright (c) 2021 Pavel Korotkiy (outdead)"
 	app.HideHelpCommand = true
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
@@ -166,6 +166,11 @@ func (executor *Executor) init() {
 			Name:    "env",
 			Aliases: []string{"e"},
 			Usage:   "Config environment with server credentials (default: " + config.DefaultConfigEnv + ")",
+		},
+		&cli.BoolFlag{
+			Name:    "skip",
+			Aliases: []string{"s"},
+			Usage:   "Skip errors and run next command",
 		},
 	}
 	app.Action = func(c *cli.Context) error {
@@ -223,7 +228,11 @@ func Execute(w io.Writer, ses *config.Session, commands ...string) error {
 		}
 
 		if err != nil {
-			return fmt.Errorf("execute: %w", err)
+			if ses.SkipErrors {
+				fmt.Fprintln(w, fmt.Errorf("execute: %w", err))
+			} else {
+				return fmt.Errorf("execute: %w", err)
+			}
 		}
 
 		if err := logger.Write(ses.Log, ses.Address, command, result); err != nil {
