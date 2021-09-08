@@ -36,7 +36,7 @@ var (
 	// in single mode.
 	ErrEmptyAddress = errors.New("address is not set: to set address add -a host:port")
 
-	// ErrEmptyAddress is returned when executed command without setting password
+	// ErrEmptyPassword is returned when executed command without setting password
 	// in single mode.
 	ErrEmptyPassword = errors.New("password is not set: to set password add -p password")
 
@@ -207,7 +207,7 @@ func Execute(w io.Writer, ses *config.Session, commands ...string) error {
 		var result string
 		var err error
 
-		// TODO: Add interface with stored remote executor client and us it for each command.
+		// TODO: Add interface with stored remote executor client and use it for each command.
 		switch ses.Type {
 		case config.ProtocolTELNET:
 			result, err = telnet.Execute(ses.Address, ses.Password, command)
@@ -227,7 +227,7 @@ func Execute(w io.Writer, ses *config.Session, commands ...string) error {
 		}
 
 		if err := logger.Write(ses.Log, ses.Address, command, result); err != nil {
-			return fmt.Errorf("log: %w", err)
+			fmt.Fprintln(w, fmt.Errorf("log: %w", err))
 		}
 
 		if i+1 != len(commands) {

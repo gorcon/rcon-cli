@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 
 VERSION="$1"
+if [ -z "${VERSION}" ]; then echo "VERSION is not set. Use ./release.sh 0.0.0" >&2; exit 1; fi
 
-if [ -z "${VERSION}" ]; then
-   echo "VERSION is not set. Use ./release.sh 0.0.0" >&2
-   exit 1
-fi
-
-rm -fr release
+rm -r release
 mkdir release
 touch release/checksum.txt
 
@@ -15,10 +11,8 @@ function make_release() {
     local arch="$1"
     local os="$2"
     local release_name="$3"
-    if [ -z "${arch}" ] || [ -z "${os}" ] || [ -z "${release_name}" ]; then
-       echo "args are not set" >&2
-       return 1
-    fi
+    if [ -z "${arch}" ] || [ -z "${os}" ] || [ -z "${release_name}" ]; then echo "args are not set" >&2; return 1; fi
+
     local ext="$4"
 
     local dir="release/${release_name}"
