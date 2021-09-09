@@ -105,103 +105,52 @@ func (executor *Executor) NewSession(c *cli.Context) (*config.Session, error) {
 		return &ses, fmt.Errorf("config: %w", err)
 	}
 
-	e := c.String("env")
-	if e == "" {
-		e = config.DefaultConfigEnv
+	env := c.String("env")
+	if env == "" {
+		env = config.DefaultConfigEnv
 	}
 
 	// Get variables from config environment if flags are not defined.
 	if ses.Address == "" {
-		ses.Address = (*cfg)[e].Address
+		ses.Address = (*cfg)[env].Address
 	}
 
 	if ses.Password == "" {
-		ses.Password = (*cfg)[e].Password
+		ses.Password = (*cfg)[env].Password
 	}
 
 	if ses.Log == "" {
-		ses.Log = (*cfg)[e].Log
+		ses.Log = (*cfg)[env].Log
 	}
 
 	if ses.Type == "" {
-		ses.Type = (*cfg)[e].Type
+		ses.Type = (*cfg)[env].Type
 	}
 
 	return &ses, nil
 }
 
-// init creates a new cli Application.
-func (executor *Executor) init() {
-	app := cli.NewApp()
-	app.Usage = "CLI for executing queries on a remote server"
-	app.Description = "Can be run in two modes - in the mode of a single query and in terminal mode of reading the " +
-		"input stream. \n\n" + "To run single mode type commands after options flags. Example: \n" +
-		filepath.Base(os.Args[0]) + " -a 127.0.0.1:16260 -p password command1 command2 \n\n" +
-		"To run terminal mode just do not specify commands to execute. Example: \n" +
-		filepath.Base(os.Args[0]) + " -a 127.0.0.1:16260 -p password"
-	app.Version = executor.version
-	app.Copyright = "Copyright (c) 2020 Pavel Korotkiy (outdead)"
-	app.HideHelpCommand = true
-	app.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:    "address",
-			Aliases: []string{"a"},
-			Usage:   "Set host and port to remote server. Example 127.0.0.1:16260",
-		},
-		&cli.StringFlag{
-			Name:    "password",
-			Aliases: []string{"p"},
-			Usage:   "Set password to remote server",
-		},
-		&cli.StringFlag{
-			Name:    "type",
-			Aliases: []string{"t"},
-			Usage:   "Specify type of connection (default: " + config.DefaultProtocol + ")",
-		},
-		&cli.StringFlag{
-			Name:    "log",
-			Aliases: []string{"l"},
-			Usage:   "Path to the log file. If not specified it is taken from the config",
-		},
-		&cli.StringFlag{
-			Name:    "config",
-			Aliases: []string{"c"},
-			Usage:   "Path to the configuration file (default: " + config.DefaultConfigName + ")",
-		},
-		&cli.StringFlag{
-			Name:    "env",
-			Aliases: []string{"e"},
-			Usage:   "Config environment with server credentials (default: " + config.DefaultConfigEnv + ")",
-		},
-		&cli.BoolFlag{
-			Name:    "skip",
-			Aliases: []string{"s"},
-			Usage:   "Skip errors and run next command",
-		},
-	}
-	app.Action = func(c *cli.Context) error {
-		ses, err := executor.NewSession(c)
-		if err != nil {
-			return err
-		}
+// Dial sends auth request for remote server. Returns en error if
+// address or password is incorrect.
+func (executor *Executor) Dial(ses *config.Session) error {
+	var err error
 
-		commands := c.Args().Slice()
-		if len(commands) == 0 {
-			return executor.Interactive(executor.r, executor.w, ses)
+	if executor.client == nil {
+		switch ses.Type {
+		case config.ProtocolTELNET:
+			executor.client, err = telnet.Dial(ses.Address, ses.Password)
+		case config.ProtocolWebRCON:
+			executor.client, err = websocket.Dial(ses.Address, ses.Password)
+		default:
+			executor.client, err = rcon.Dial(ses.Address, ses.Password)
 		}
-
-		if ses.Address == "" {
-			return ErrEmptyAddress
-		}
-
-		if ses.Password == "" {
-			return ErrEmptyPassword
-		}
-
-		return executor.Execute(executor.w, ses, commands...)
 	}
 
-	executor.app = app
+	if err != nil {
+		return fmt.Errorf("auth: %w", err)
+	}
+
+	return nil
 }
 
 // Execute sends command to Execute to the remote server and prints the response.
@@ -210,8 +159,6 @@ func (executor *Executor) Execute(w io.Writer, ses *config.Session, commands ...
 		return ErrCommandEmpty
 	}
 
-	err := executor.Dial(ses)
-
 	if ses.Type == config.ProtocolWebRCON {
 		defer func() {
 			executor.client.Close()
@@ -219,7 +166,7 @@ func (executor *Executor) Execute(w io.Writer, ses *config.Session, commands ...
 		}()
 	}
 
-	if err != nil {
+	if err := executor.Dial(ses); err != nil {
 		return fmt.Errorf("execute: %w", err)
 	}
 
@@ -308,6 +255,7 @@ func (executor *Executor) Interactive(r io.Reader, w io.Writer, ses *config.Sess
 	return nil
 }
 
+// Close closes connection to remote server.
 func (executor *Executor) Close() error {
 	if executor.client != nil {
 		return executor.client.Close()
@@ -316,25 +264,76 @@ func (executor *Executor) Close() error {
 	return nil
 }
 
-// Dial sends auth request for remote server. Returns en error if
-// address or password is incorrect.
-func (executor *Executor) Dial(ses *config.Session) error {
-	var err error
-
-	if executor.client == nil {
-		switch ses.Type {
-		case config.ProtocolTELNET:
-			executor.client, err = telnet.Dial(ses.Address, ses.Password)
-		case config.ProtocolWebRCON:
-			executor.client, err = websocket.Dial(ses.Address, ses.Password)
-		default:
-			executor.client, err = rcon.Dial(ses.Address, ses.Password)
+// init creates a new cli Application.
+func (executor *Executor) init() {
+	app := cli.NewApp()
+	app.Usage = "CLI for executing queries on a remote server"
+	app.Description = "Can be run in two modes - in the mode of a single query and in terminal mode of reading the " +
+		"input stream. \n\n" + "To run single mode type commands after options flags. Example: \n" +
+		filepath.Base(os.Args[0]) + " -a 127.0.0.1:16260 -p password command1 command2 \n\n" +
+		"To run terminal mode just do not specify commands to execute. Example: \n" +
+		filepath.Base(os.Args[0]) + " -a 127.0.0.1:16260 -p password"
+	app.Version = executor.version
+	app.Copyright = "Copyright (c) 2020 Pavel Korotkiy (outdead)"
+	app.HideHelpCommand = true
+	app.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:    "address",
+			Aliases: []string{"a"},
+			Usage:   "Set host and port to remote server. Example 127.0.0.1:16260",
+		},
+		&cli.StringFlag{
+			Name:    "password",
+			Aliases: []string{"p"},
+			Usage:   "Set password to remote server",
+		},
+		&cli.StringFlag{
+			Name:    "type",
+			Aliases: []string{"t"},
+			Usage:   "Specify type of connection (default: " + config.DefaultProtocol + ")",
+		},
+		&cli.StringFlag{
+			Name:    "log",
+			Aliases: []string{"l"},
+			Usage:   "Path to the log file. If not specified it is taken from the config",
+		},
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c"},
+			Usage:   "Path to the configuration file (default: " + config.DefaultConfigName + ")",
+		},
+		&cli.StringFlag{
+			Name:    "env",
+			Aliases: []string{"e"},
+			Usage:   "Config environment with server credentials (default: " + config.DefaultConfigEnv + ")",
+		},
+		&cli.BoolFlag{
+			Name:    "skip",
+			Aliases: []string{"s"},
+			Usage:   "Skip errors and run next command",
+		},
+	}
+	app.Action = func(c *cli.Context) error {
+		ses, err := executor.NewSession(c)
+		if err != nil {
+			return err
 		}
+
+		commands := c.Args().Slice()
+		if len(commands) == 0 {
+			return executor.Interactive(executor.r, executor.w, ses)
+		}
+
+		if ses.Address == "" {
+			return ErrEmptyAddress
+		}
+
+		if ses.Password == "" {
+			return ErrEmptyPassword
+		}
+
+		return executor.Execute(executor.w, ses, commands...)
 	}
 
-	if err != nil {
-		return fmt.Errorf("auth: %w", err)
-	}
-
-	return nil
+	executor.app = app
 }
