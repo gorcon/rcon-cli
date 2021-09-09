@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Added `--skip, -s` flag, allowed to skip error on multiple commands or in terminal mode.
 
+### Changed
+- Create one keep alive connection in terminal mode.
+
 ## [v0.9.1] - 2021-03-14
 ### Added
 - Added Dockerfile. 

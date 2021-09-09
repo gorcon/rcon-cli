@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gorcon/rcon"
 	"github.com/gorcon/rcon-cli/internal/config"
 	"github.com/gorcon/rcon-cli/internal/logger"
-	"github.com/gorcon/rcon-cli/internal/proto/rcon"
-	"github.com/gorcon/rcon-cli/internal/proto/telnet"
-	"github.com/gorcon/rcon-cli/internal/proto/websocket"
+	"github.com/gorcon/telnet"
+	"github.com/gorcon/websocket"
 	"github.com/urfave/cli/v2"
 )
 
@@ -54,6 +54,11 @@ type Executor struct {
 	r       io.Reader
 	w       io.Writer
 	app     *cli.App
+
+	client interface {
+		Execute(command string) (string, error)
+		Close() error
+	}
 }
 
 // NewExecutor creates a new Executor.
@@ -70,6 +75,7 @@ func NewExecutor(r io.Reader, w io.Writer, version string) *Executor {
 // Run is the entry point to the cli app.
 func (executor *Executor) Run(arguments []string) error {
 	executor.init()
+	defer executor.Close()
 
 	if err := executor.app.Run(arguments); err != nil && !errors.Is(err, flag.ErrHelp) {
 		return fmt.Errorf("cli: %w", err)
@@ -134,7 +140,7 @@ func (executor *Executor) init() {
 		"To run terminal mode just do not specify commands to execute. Example: \n" +
 		filepath.Base(os.Args[0]) + " -a 127.0.0.1:16260 -p password"
 	app.Version = executor.version
-	app.Copyright = "Copyright (c) 2021 Pavel Korotkiy (outdead)"
+	app.Copyright = "Copyright (c) 2020 Pavel Korotkiy (outdead)"
 	app.HideHelpCommand = true
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
@@ -181,7 +187,7 @@ func (executor *Executor) init() {
 
 		commands := c.Args().Slice()
 		if len(commands) == 0 {
-			return Interactive(executor.r, executor.w, ses)
+			return executor.Interactive(executor.r, executor.w, ses)
 		}
 
 		if ses.Address == "" {
@@ -192,16 +198,29 @@ func (executor *Executor) init() {
 			return ErrEmptyPassword
 		}
 
-		return Execute(executor.w, ses, commands...)
+		return executor.Execute(executor.w, ses, commands...)
 	}
 
 	executor.app = app
 }
 
 // Execute sends command to Execute to the remote server and prints the response.
-func Execute(w io.Writer, ses *config.Session, commands ...string) error {
+func (executor *Executor) Execute(w io.Writer, ses *config.Session, commands ...string) error {
 	if len(commands) == 0 {
 		return ErrCommandEmpty
+	}
+
+	err := executor.Dial(ses)
+
+	if ses.Type == config.ProtocolWebRCON {
+		defer func() {
+			executor.client.Close()
+			executor.client = nil
+		}()
+	}
+
+	if err != nil {
+		return fmt.Errorf("execute: %w", err)
 	}
 
 	for i, command := range commands {
@@ -212,16 +231,7 @@ func Execute(w io.Writer, ses *config.Session, commands ...string) error {
 		var result string
 		var err error
 
-		// TODO: Add interface with stored remote executor client and use it for each command.
-		switch ses.Type {
-		case config.ProtocolTELNET:
-			result, err = telnet.Execute(ses.Address, ses.Password, command)
-		case config.ProtocolWebRCON:
-			result, err = websocket.Execute(ses.Address, ses.Password, command)
-		default:
-			result, err = rcon.Execute(ses.Address, ses.Password, command)
-		}
-
+		result, err = executor.client.Execute(command)
 		if result != "" {
 			result = strings.TrimSpace(result)
 			fmt.Fprintln(w, result)
@@ -249,7 +259,7 @@ func Execute(w io.Writer, ses *config.Session, commands ...string) error {
 
 // Interactive reads stdin, parses commands, executes them on remote server
 // and prints the responses.
-func Interactive(r io.Reader, w io.Writer, ses *config.Session) error {
+func (executor *Executor) Interactive(r io.Reader, w io.Writer, ses *config.Session) error {
 	if ses.Address == "" {
 		fmt.Fprint(w, "Enter remote host and port [ip:port]: ")
 		fmt.Fscanln(r, &ses.Address)
@@ -260,61 +270,71 @@ func Interactive(r io.Reader, w io.Writer, ses *config.Session) error {
 		fmt.Fscanln(r, &ses.Password)
 	}
 
-	var attempt int
+	if ses.Type == "" {
+		fmt.Fprint(w, "Enter protocol type (empty for rcon): ")
+		fmt.Fscanln(r, &ses.Type)
+	}
 
-Loop:
-	for {
-		if ses.Type == "" {
-			fmt.Fprint(w, "Enter protocol type (empty for rcon): ")
-			fmt.Fscanln(r, &ses.Type)
+	switch ses.Type {
+	case config.ProtocolTELNET:
+		return telnet.DialInteractive(r, w, ses.Address, ses.Password)
+	case "", config.ProtocolRCON, config.ProtocolWebRCON:
+		if err := executor.Dial(ses); err != nil {
+			return err
 		}
 
-		switch ses.Type {
-		case config.ProtocolTELNET:
-			return telnet.Interactive(r, w, ses.Address, ses.Password)
-		case "", config.ProtocolRCON, config.ProtocolWebRCON:
-			if err := CheckCredentials(ses); err != nil {
-				return err
-			}
+		fmt.Fprintf(w, "Waiting commands for %s (or type %s to exit)\n> ", ses.Address, CommandQuit)
 
-			fmt.Fprintf(w, "Waiting commands for %s (or type %s to exit)\n> ", ses.Address, CommandQuit)
-
-			scanner := bufio.NewScanner(r)
-			for scanner.Scan() {
-				command := scanner.Text()
-				if command != "" {
-					if command == CommandQuit {
-						break Loop
-					}
-
-					if err := Execute(w, ses, command); err != nil {
-						return err
-					}
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			command := scanner.Text()
+			if command != "" {
+				if command == CommandQuit {
+					break
 				}
 
-				fmt.Fprint(w, "> ")
+				if err := executor.Execute(w, ses, command); err != nil {
+					return err
+				}
 			}
-		default:
-			attempt++
-			ses.Type = ""
-			fmt.Fprintf(w, "Unsupported protocol type. Allowed %q, %q and %q protocols\n",
-				config.ProtocolRCON, config.ProtocolWebRCON, config.ProtocolTELNET)
 
-			if attempt >= AttemptsLimit {
-				return ErrToManyFails
-			}
+			fmt.Fprint(w, "> ")
 		}
+	default:
+		fmt.Fprintf(w, "Unsupported protocol type (%q). Allowed %q, %q and %q protocols\n",
+			ses.Type, config.ProtocolRCON, config.ProtocolWebRCON, config.ProtocolTELNET)
 	}
 
 	return nil
 }
 
-// CheckCredentials sends auth request for remote server. Returns en error if
-// address or password is incorrect.
-func CheckCredentials(ses *config.Session) error {
-	if ses.Type == config.ProtocolWebRCON {
-		return websocket.CheckCredentials(ses.Address, ses.Password)
+func (executor *Executor) Close() error {
+	if executor.client != nil {
+		return executor.client.Close()
 	}
 
-	return rcon.CheckCredentials(ses.Address, ses.Password)
+	return nil
+}
+
+// Dial sends auth request for remote server. Returns en error if
+// address or password is incorrect.
+func (executor *Executor) Dial(ses *config.Session) error {
+	var err error
+
+	if executor.client == nil {
+		switch ses.Type {
+		case config.ProtocolTELNET:
+			executor.client, err = telnet.Dial(ses.Address, ses.Password)
+		case config.ProtocolWebRCON:
+			executor.client, err = websocket.Dial(ses.Address, ses.Password)
+		default:
+			executor.client, err = rcon.Dial(ses.Address, ses.Password)
+		}
+	}
+
+	if err != nil {
+		return fmt.Errorf("auth: %w", err)
+	}
+
+	return nil
 }

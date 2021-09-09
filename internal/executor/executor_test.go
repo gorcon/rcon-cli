@@ -144,50 +144,68 @@ func TestExecute(t *testing.T) {
 
 	// Test empty address.
 	t.Run("empty address", func(t *testing.T) {
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Execute(w, &config.Session{Address: "", Password: "password"}, "help")
+		app := executor.NewExecutor(nil, &w, "")
+		// defer app.Close()
+
+		err := app.Execute(&w, &config.Session{Address: "", Password: "password"}, "help")
 		assert.Error(t, err)
 	})
 
 	// Test empty password.
 	t.Run("empty password", func(t *testing.T) {
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: ""}, "help")
+		app := executor.NewExecutor(nil, &w, "")
+		defer app.Close()
+
+		err := app.Execute(&w, &config.Session{Address: serverRCON.Addr(), Password: ""}, "help")
 		assert.Error(t, err)
 	})
 
 	// Test wrong password.
 	t.Run("wrong password", func(t *testing.T) {
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "wrong"}, "help")
+		app := executor.NewExecutor(nil, &w, "")
+		defer app.Close()
+
+		err := app.Execute(&w, &config.Session{Address: serverRCON.Addr(), Password: "wrong"}, "help")
 		assert.Error(t, err)
 	})
 
 	// Test empty command.
 	t.Run("empty command", func(t *testing.T) {
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "password"}, "")
+		app := executor.NewExecutor(nil, &w, "")
+		defer app.Close()
+
+		err := app.Execute(&w, &config.Session{Address: serverRCON.Addr(), Password: "password"}, "")
 		assert.Error(t, err)
 	})
 
 	// Test long command.
 	t.Run("long command", func(t *testing.T) {
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
 		bigCommand := make([]byte, 1001)
-		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "password"}, string(bigCommand))
+		app := executor.NewExecutor(nil, &w, "")
+		defer app.Close()
+
+		err := app.Execute(&w, &config.Session{Address: serverRCON.Addr(), Password: "password"}, string(bigCommand))
 		assert.Error(t, err)
 	})
 
 	// Positive RCON test Execute func.
 	t.Run("no error rcon", func(t *testing.T) {
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "password"}, "help", "unknown")
+		app := executor.NewExecutor(nil, &w, "")
+		defer app.Close()
+
+		err := app.Execute(&w, &config.Session{Address: serverRCON.Addr(), Password: "password"}, "help", "unknown")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
@@ -196,9 +214,12 @@ func TestExecute(t *testing.T) {
 
 	// Positive TELNET test Execute func.
 	t.Run("no error telnet", func(t *testing.T) {
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Execute(w, &config.Session{Address: serverTELNET.Addr(), Password: "password", Type: config.ProtocolTELNET}, "help", "unknown")
+		app := executor.NewExecutor(nil, &w, "")
+		defer app.Close()
+
+		err := app.Execute(&w, &config.Session{Address: serverTELNET.Addr(), Password: "password", Type: config.ProtocolTELNET}, "help", "unknown")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
@@ -209,9 +230,12 @@ func TestExecute(t *testing.T) {
 
 	// Positive WEB RCON test Execute func.
 	t.Run("no error web", func(t *testing.T) {
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Execute(w, &config.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: config.ProtocolWebRCON}, "status")
+		app := executor.NewExecutor(nil, &w, "")
+		defer app.Close()
+
+		err := app.Execute(&w, &config.Session{Address: serverWebRCON.Listener.Addr().String(), Password: "password", Type: config.ProtocolWebRCON}, "status")
 		assert.NoError(t, err)
 
 		result := strings.TrimSuffix(w.String(), "\n")
@@ -220,12 +244,15 @@ func TestExecute(t *testing.T) {
 
 	// Positive test Execute func with log.
 	t.Run("no error with log", func(t *testing.T) {
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
 		logFileName := "tmpfile.log"
 		defer os.Remove(logFileName)
 
-		err := executor.Execute(w, &config.Session{Address: serverRCON.Addr(), Password: "password", Log: logFileName}, "help")
+		app := executor.NewExecutor(nil, &w, "")
+		defer app.Close()
+
+		err := app.Execute(&w, &config.Session{Address: serverRCON.Addr(), Password: "password", Log: logFileName}, "help")
 		assert.NoError(t, err)
 	})
 
@@ -278,9 +305,12 @@ func TestExecute(t *testing.T) {
 				return n
 			}()
 
-			w := &bytes.Buffer{}
+			w := bytes.Buffer{}
 
-			err := executor.Execute(w, &config.Session{Address: addr, Password: password}, "help")
+			app := executor.NewExecutor(nil, &w, "")
+			defer app.Close()
+
+			err := app.Execute(&w, &config.Session{Address: addr, Password: password}, "help")
 			assert.NoError(t, err)
 
 			result := strings.TrimSuffix(w.String(), "\n")
@@ -429,9 +459,12 @@ of your current perk levels in a CSV file next to it.
 				return n
 			}()
 
-			w := &bytes.Buffer{}
+			w := bytes.Buffer{}
 
-			err := executor.Execute(w, &config.Session{Address: addr, Password: password, Type: config.ProtocolTELNET}, "help")
+			app := executor.NewExecutor(nil, &w, "")
+			defer app.Close()
+
+			err := app.Execute(&w, &config.Session{Address: addr, Password: password, Type: config.ProtocolTELNET}, "help")
 			assert.NoError(t, err)
 
 			result := strings.TrimSuffix(w.String(), "\n")
@@ -446,9 +479,12 @@ of your current perk levels in a CSV file next to it.
 		password := getVar("TEST_RUST_SERVER_RCON_PASSWORD", "docker")
 
 		t.Run("rust server rcon", func(t *testing.T) {
-			w := &bytes.Buffer{}
+			w := bytes.Buffer{}
 
-			err := executor.Execute(w, &config.Session{Address: addr, Password: password}, "status")
+			app := executor.NewExecutor(nil, &w, "")
+			defer app.Close()
+
+			err := app.Execute(&w, &config.Session{Address: addr, Password: password}, "status")
 			assert.NoError(t, err)
 			assert.NotEmpty(t, w.String())
 
@@ -461,9 +497,12 @@ of your current perk levels in a CSV file next to it.
 		password := getVar("TEST_RUST_SERVER_WEB_PASSWORD", "docker")
 
 		t.Run("rust server web", func(t *testing.T) {
-			w := &bytes.Buffer{}
+			w := bytes.Buffer{}
 
-			err := executor.Execute(w, &config.Session{Address: addr, Password: password, Type: config.ProtocolWebRCON}, "status")
+			app := executor.NewExecutor(nil, &w, "")
+			defer app.Close()
+
+			err := app.Execute(&w, &config.Session{Address: addr, Password: password, Type: config.ProtocolWebRCON}, "status")
 			assert.NoError(t, err)
 			assert.NotEmpty(t, w.String())
 
@@ -493,31 +532,20 @@ func TestInteractive(t *testing.T) {
 	// Test wrong password.
 	t.Run("wrong password", func(t *testing.T) {
 		var r bytes.Buffer
+		r.WriteString("\n")
 		r.WriteString(executor.CommandQuit + "\n")
 
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Interactive(&r, w, &config.Session{Address: serverRCON.Addr(), Password: "fake"})
+		app := executor.NewExecutor(&r, &w, "")
+		err := app.Interactive(&r, &w, &config.Session{Address: serverRCON.Addr(), Password: "fake"})
 		assert.Error(t, err)
-	})
-
-	// Test to many fails.
-	t.Run("to many fails", func(t *testing.T) {
-		var r bytes.Buffer
-		r.WriteString("wrong" + "\n")
-		r.WriteString("wrong" + "\n")
-		r.WriteString("wrong" + "\n")
-		r.WriteString(executor.CommandQuit + "\n")
-
-		w := &bytes.Buffer{}
-
-		err := executor.Interactive(&r, w, &config.Session{Address: serverRCON.Addr(), Password: "password"})
-		assert.EqualError(t, err, executor.ErrToManyFails.Error())
 	})
 
 	// Test long command.
 	t.Run("long command", func(t *testing.T) {
 		r := bytes.Buffer{}
+		r.WriteString("\n")
 		r.WriteString(serverRCON.Addr() + "\n")
 		r.WriteString("password" + "\n")
 		r.WriteString(config.ProtocolRCON + "\n")
@@ -527,13 +555,16 @@ func TestInteractive(t *testing.T) {
 
 		w := bytes.Buffer{}
 
-		err := executor.Interactive(&r, &w, &config.Session{Address: serverRCON.Addr(), Password: "password"})
+		app := executor.NewExecutor(&r, &w, "")
+		defer app.Close()
+
+		err := app.Interactive(&r, &w, &config.Session{Address: serverRCON.Addr(), Password: "password"})
 		assert.EqualError(t, err, "execute: command too long")
 	})
 
 	// Test get Interactive commands RCON.
 	t.Run("get commands rcon", func(t *testing.T) {
-		r := &bytes.Buffer{}
+		r := bytes.Buffer{}
 		r.WriteString(serverRCON.Addr() + "\n")
 		r.WriteString("password" + "\n")
 		r.WriteString(config.ProtocolRCON + "\n")
@@ -541,15 +572,18 @@ func TestInteractive(t *testing.T) {
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(executor.CommandQuit + "\n")
 
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Interactive(r, w, &config.Session{})
+		app := executor.NewExecutor(&r, &w, "")
+		defer app.Close()
+
+		err := app.Interactive(&r, &w, &config.Session{})
 		assert.NoError(t, err)
 	})
 
 	// Test get Interactive commands TELNET.
 	t.Run("get commands telnet", func(t *testing.T) {
-		r := &bytes.Buffer{}
+		r := bytes.Buffer{}
 		r.WriteString(serverTELNET.Addr() + "\n")
 		r.WriteString("password" + "\n")
 		r.WriteString(config.ProtocolTELNET + "\n")
@@ -557,25 +591,31 @@ func TestInteractive(t *testing.T) {
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(executor.CommandQuit + "\n")
 
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Interactive(r, w, &config.Session{})
+		app := executor.NewExecutor(&r, &w, "")
+		defer app.Close()
+
+		err := app.Interactive(&r, &w, &config.Session{})
 		assert.NoError(t, err)
 	})
 
 	// Test get Interactive commands WEB RCON.
 	t.Run("get commands web", func(t *testing.T) {
-		r := &bytes.Buffer{}
+		r := bytes.Buffer{}
 		r.WriteString(serverWebRCON.Listener.Addr().String() + "\n")
 		r.WriteString("password" + "\n")
 		r.WriteString(config.ProtocolWebRCON + "\n")
-		r.WriteString("help" + "\n")
+		r.WriteString("status" + "\n")
 		r.WriteString("unknown command" + "\n")
 		r.WriteString(executor.CommandQuit + "\n")
 
-		w := &bytes.Buffer{}
+		w := bytes.Buffer{}
 
-		err := executor.Interactive(r, w, &config.Session{})
+		app := executor.NewExecutor(&r, &w, "")
+		defer app.Close()
+
+		err := app.Interactive(&r, &w, &config.Session{})
 		assert.NoError(t, err)
 	})
 }
