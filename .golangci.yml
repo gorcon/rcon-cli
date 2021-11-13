@@ -11,6 +11,13 @@ output:
 
 # SEE: https://golangci-lint.run/usage/configuration/
 linters-settings:
+  cyclop:
+    # the maximal code complexity to report
+    max-complexity: 12
+    # the maximal average package complexity. If it's higher than 0.0 (float) the check is enabled (default 0.0)
+    package-average: 0.0
+    # should ignore tests (default false)
+    skip-tests: true
   dupl:
     # tokens count to trigger issue, 150 by default
     threshold: 100
@@ -78,6 +85,12 @@ linters-settings:
       - gopkg.in/Sirupsen/logrus.v1
   lll:
     line-length: 120 # 120 is default
+  tagliatelle:
+    case:
+      use-field-name: true
+      rules:
+        json: snake
+        yaml: snake
   maligned:
     # print struct with more effective memory layout or not, false by default
     suggest-new: true
@@ -101,6 +114,24 @@ linters-settings:
   whitespace:
     multi-if: false   # Enforces newlines (or comments) after every multi-line if statement
     multi-func: false # Enforces newlines (or comments) after every multi-line function signature
+  wrapcheck:
+    # An array of strings that specify substrings of signatures to ignore.
+    # If this set, it will override the default set of ignored signatures.
+    # See https://github.com/tomarrell/wrapcheck#configuration for more information.
+    ignoreSigs:
+      - .Errorf(
+      - errors.New(
+      - errors.Unwrap(
+      - .Wrap(
+      - .Wrapf(
+      - .WithMessage(
+      - .WithMessagef(
+      - .WithStack(
+      - telnet.DialInteractive(
+      - Close()
+    ignorePackageGlobs:
+      - encoding/*
+      - github.com/pkg/*
   wsl:
     # If true append is only allowed to be cuddled if appending value is
     # matching variables, fields or types on line above. Default is true.
@@ -120,6 +151,10 @@ linters-settings:
 linters:
   enable-all: true
   disable:
+    - maligned # is deprecated (since v1.38.0). Replaced by govet 'fieldalignment'.
+    - golint # is deprecated (since v1.41.0). Replaced by revive.
+    - interfacer # is deprecated (since v1.38.0).
+    - scopelint # is deprecated (since v1.39.0). Replaced by exportloopref.
 
 issues:
   exclude:

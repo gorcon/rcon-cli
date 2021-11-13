@@ -140,13 +140,14 @@ func (executor *Executor) Dial(ses *config.Session) error {
 
 	if err != nil {
 		executor.client = nil
+
 		return fmt.Errorf("auth: %w", err)
 	}
 
 	return nil
 }
 
-// Execute sends command to Execute to the remote server and prints the response.
+// Execute sends commands to Execute to the remote server and prints the response.
 func (executor *Executor) Execute(w io.Writer, ses *config.Session, commands ...string) error {
 	if len(commands) == 0 {
 		return ErrCommandEmpty
@@ -167,29 +168,8 @@ func (executor *Executor) Execute(w io.Writer, ses *config.Session, commands ...
 	}
 
 	for i, command := range commands {
-		if command == "" {
-			return ErrCommandEmpty
-		}
-
-		var result string
-		var err error
-
-		result, err = executor.client.Execute(command)
-		if result != "" {
-			result = strings.TrimSpace(result)
-			fmt.Fprintln(w, result)
-		}
-
-		if err != nil {
-			if ses.SkipErrors {
-				fmt.Fprintln(w, fmt.Errorf("execute: %w", err))
-			} else {
-				return fmt.Errorf("execute: %w", err)
-			}
-		}
-
-		if err := logger.Write(ses.Log, ses.Address, command, result); err != nil {
-			fmt.Fprintln(w, fmt.Errorf("log: %w", err))
+		if err := executor.execute(w, ses, command); err != nil {
+			return err
 		}
 
 		if i+1 != len(commands) {
@@ -332,4 +312,34 @@ func (executor *Executor) init() {
 	}
 
 	executor.app = app
+}
+
+// execute sends command to Execute to the remote server and prints the response.
+func (executor *Executor) execute(w io.Writer, ses *config.Session, command string) error {
+	if command == "" {
+		return ErrCommandEmpty
+	}
+
+	var result string
+	var err error
+
+	result, err = executor.client.Execute(command)
+	if result != "" {
+		result = strings.TrimSpace(result)
+		fmt.Fprintln(w, result)
+	}
+
+	if err != nil {
+		if ses.SkipErrors {
+			fmt.Fprintln(w, fmt.Errorf("execute: %w", err))
+		} else {
+			return fmt.Errorf("execute: %w", err)
+		}
+	}
+
+	if err := logger.Write(ses.Log, ses.Address, command, result); err != nil {
+		fmt.Fprintln(w, fmt.Errorf("log: %w", err))
+	}
+
+	return nil
 }
