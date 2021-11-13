@@ -147,7 +147,7 @@ func TestExecute(t *testing.T) {
 		w := bytes.Buffer{}
 
 		app := executor.NewExecutor(nil, &w, "")
-		// defer app.Close()
+		defer app.Close()
 
 		err := app.Execute(&w, &config.Session{Address: "", Password: "password"}, "help")
 		assert.Error(t, err)
@@ -538,6 +538,8 @@ func TestInteractive(t *testing.T) {
 		w := bytes.Buffer{}
 
 		app := executor.NewExecutor(&r, &w, "")
+		defer app.Close()
+
 		err := app.Interactive(&r, &w, &config.Session{Address: serverRCON.Addr(), Password: "fake"})
 		assert.Error(t, err)
 	})
@@ -633,6 +635,8 @@ func TestNewExecutor(t *testing.T) {
 		w := &bytes.Buffer{}
 
 		app := executor.NewExecutor(r, w, "")
+		defer app.Close()
+
 		args := os.Args[0:1]
 		args = append(args, "-a="+serverRCON.Addr())
 		args = append(args, "-p="+"password")
@@ -658,6 +662,8 @@ func TestNewExecutor(t *testing.T) {
 		w := &bytes.Buffer{}
 
 		app := executor.NewExecutor(r, w, "")
+		defer app.Close()
+
 		args := os.Args[0:1]
 		args = append(args, "-c="+configFileName)
 		args = append(args, "help")
@@ -682,6 +688,8 @@ func TestNewExecutor(t *testing.T) {
 		w := &bytes.Buffer{}
 
 		app := executor.NewExecutor(r, w, "")
+		defer app.Close()
+
 		args := os.Args[0:1]
 		// Hack to use os.Args[0] in go run
 		args[0] = ""
@@ -708,6 +716,8 @@ func TestNewExecutor(t *testing.T) {
 		w := &bytes.Buffer{}
 
 		app := executor.NewExecutor(r, w, "")
+		defer app.Close()
+
 		args := os.Args[0:1]
 		// Hack to use os.Args[0] in go run
 		args[0] = ""
@@ -725,6 +735,8 @@ func TestNewExecutor(t *testing.T) {
 		w := &bytes.Buffer{}
 
 		app := executor.NewExecutor(r, w, "")
+		defer app.Close()
+
 		args := os.Args[0:1]
 		args = append(args, "-a="+serverRCON.Addr())
 		args = append(args, "-p="+"password")

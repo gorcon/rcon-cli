@@ -21,10 +21,6 @@ import (
 // CommandQuit is the command for exit from Interactive mode.
 const CommandQuit = ":q"
 
-// AttemptsLimit is the limit value for the number of attempts to obtain user
-// data in terminal mode.
-const AttemptsLimit = 3
-
 // CommandsResponseSeparator is symbols that is written between responses of
 // several commands if more than one command was called.
 // TODO: Add to config.
@@ -40,13 +36,15 @@ var (
 	// in single mode.
 	ErrEmptyPassword = errors.New("password is not set: to set password add -p password")
 
-	// ErrToManyFails is returned in terminal mode when exceeding the limit of
-	// user data retrieval attempts.
-	ErrToManyFails = errors.New("to many fails")
-
 	// ErrCommandEmpty is returned when executed command length equal 0.
 	ErrCommandEmpty = errors.New("command is not set")
 )
+
+// ExecuteCloser is the interface that groups Execute and Close methods.
+type ExecuteCloser interface {
+	Execute(command string) (string, error)
+	Close() error
+}
 
 // Executor is a cli commands execute wrapper.
 type Executor struct {
@@ -55,27 +53,21 @@ type Executor struct {
 	w       io.Writer
 	app     *cli.App
 
-	client interface {
-		Execute(command string) (string, error)
-		Close() error
-	}
+	client ExecuteCloser
 }
 
 // NewExecutor creates a new Executor.
 func NewExecutor(r io.Reader, w io.Writer, version string) *Executor {
-	executor := Executor{
+	return &Executor{
 		version: version,
 		r:       r,
 		w:       w,
 	}
-
-	return &executor
 }
 
 // Run is the entry point to the cli app.
 func (executor *Executor) Run(arguments []string) error {
 	executor.init()
-	defer executor.Close()
 
 	if err := executor.app.Run(arguments); err != nil && !errors.Is(err, flag.ErrHelp) {
 		return fmt.Errorf("cli: %w", err)
@@ -147,6 +139,7 @@ func (executor *Executor) Dial(ses *config.Session) error {
 	}
 
 	if err != nil {
+		executor.client = nil
 		return fmt.Errorf("auth: %w", err)
 	}
 
@@ -159,10 +152,13 @@ func (executor *Executor) Execute(w io.Writer, ses *config.Session, commands ...
 		return ErrCommandEmpty
 	}
 
+	// TODO: Check keep alive connection to web rcon.
 	if ses.Type == config.ProtocolWebRCON {
 		defer func() {
-			executor.client.Close()
-			executor.client = nil
+			if executor.client != nil {
+				executor.client.Close()
+				executor.client = nil
+			}
 		}()
 	}
 
