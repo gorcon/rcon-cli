@@ -1,4 +1,5 @@
 # rcon-cli
+[![Mentioned in Awesome-Selfhosted](https://awesome.re/mentioned-badge.svg)](https://github.com/awesome-selfhosted/awesome-selfhosted)
 [![GitHub Build](https://github.com/gorcon/rcon-cli/workflows/build/badge.svg)](https://github.com/gorcon/rcon-cli/actions)
 [![top level coverage](https://gocover.io/_badge/github.com/gorcon/rcon-cli?0)](https://gocover.io/github.com/gorcon/rcon-cli)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gorcon/rcon-cli)](https://goreportcard.com/report/github.com/gorcon/rcon-cli)
