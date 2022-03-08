@@ -86,6 +86,7 @@ func (executor *Executor) NewSession(c *cli.Context) (*config.Session, error) {
 		Type:       c.String("type"),
 		Log:        c.String("log"),
 		SkipErrors: c.Bool("skip"),
+		Timeout:    c.Duration("timeout"),
 	}
 
 	if ses.Address != "" && ses.Password != "" {
@@ -130,11 +131,13 @@ func (executor *Executor) Dial(ses *config.Session) error {
 	if executor.client == nil {
 		switch ses.Type {
 		case config.ProtocolTELNET:
-			executor.client, err = telnet.Dial(ses.Address, ses.Password)
+			executor.client, err = telnet.Dial(ses.Address, ses.Password, telnet.SetDialTimeout(ses.Timeout))
 		case config.ProtocolWebRCON:
-			executor.client, err = websocket.Dial(ses.Address, ses.Password)
+			executor.client, err = websocket.Dial(
+				ses.Address, ses.Password, websocket.SetDialTimeout(ses.Timeout), websocket.SetDeadline(ses.Timeout))
 		default:
-			executor.client, err = rcon.Dial(ses.Address, ses.Password)
+			executor.client, err = rcon.Dial(
+				ses.Address, ses.Password, rcon.SetDialTimeout(ses.Timeout), rcon.SetDeadline(ses.Timeout))
 		}
 	}
 
@@ -250,9 +253,17 @@ func (executor *Executor) init() {
 		"To run terminal mode just do not specify commands to execute. Example: \n" +
 		filepath.Base(os.Args[0]) + " -a 127.0.0.1:16260 -p password"
 	app.Version = executor.version
-	app.Copyright = "Copyright (c) 2020 Pavel Korotkiy (outdead)"
+	app.Copyright = "Copyright (c) 2022 Pavel Korotkiy (outdead)"
 	app.HideHelpCommand = true
-	app.Flags = []cli.Flag{
+	app.Flags = executor.getFlags()
+	app.Action = executor.action
+
+	executor.app = app
+}
+
+// getFlags returns CLI flags to parse.
+func (executor *Executor) getFlags() []cli.Flag {
+	return []cli.Flag{
 		&cli.StringFlag{
 			Name:    "address",
 			Aliases: []string{"a"},
@@ -288,30 +299,36 @@ func (executor *Executor) init() {
 			Aliases: []string{"s"},
 			Usage:   "Skip errors and run next command",
 		},
+		&cli.DurationFlag{
+			Name:    "timeout",
+			Aliases: []string{"T"},
+			Usage:   "Set dial and execute timeout",
+			Value:   config.DefaultTimeout,
+		},
 	}
-	app.Action = func(c *cli.Context) error {
-		ses, err := executor.NewSession(c)
-		if err != nil {
-			return err
-		}
+}
 
-		commands := c.Args().Slice()
-		if len(commands) == 0 {
-			return executor.Interactive(executor.r, executor.w, ses)
-		}
-
-		if ses.Address == "" {
-			return ErrEmptyAddress
-		}
-
-		if ses.Password == "" {
-			return ErrEmptyPassword
-		}
-
-		return executor.Execute(executor.w, ses, commands...)
+// action executes when no subcommands are specified.
+func (executor *Executor) action(c *cli.Context) error {
+	ses, err := executor.NewSession(c)
+	if err != nil {
+		return err
 	}
 
-	executor.app = app
+	commands := c.Args().Slice()
+	if len(commands) == 0 {
+		return executor.Interactive(executor.r, executor.w, ses)
+	}
+
+	if ses.Address == "" {
+		return ErrEmptyAddress
+	}
+
+	if ses.Password == "" {
+		return ErrEmptyPassword
+	}
+
+	return executor.Execute(executor.w, ses, commands...)
 }
 
 // execute sends command to Execute to the remote server and prints the response.

@@ -3,3 +3,4 @@ default:
   password: ""
   log: "rcon-default.log"
   type: "" # rcon, telnet, web.
+  timeout: "10s"

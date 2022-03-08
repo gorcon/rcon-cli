@@ -41,7 +41,8 @@ GLOBAL OPTIONS:
    --log value, -l value       Path to the log file. If not specified it is taken from the config
    --config value, -c value    Path to the configuration file (default: rcon.yaml)
    --env value, -e value       Config environment with server credentials (default: default)
-   --skip, -s                  Skip errors and run next command (default: false)   
+   --skip, -s                  Skip errors and run next command (default: false)
+   --timeout value, -T value   Set dial and execute timeout (default: 10s)
    --help, -h                  show help (default: false)
    --version, -v               print the version (default: false)
 ```
@@ -110,23 +111,28 @@ You can choose the environment at the start:
 ./rcon -e zomboid
 ```
 
-And set custom config file:
+Set custom config file:
 ```bash
 ./rcon -c /path/to/config/file.yaml
 ```
 
-You can use `-l` argument to specify path to log file:
+Use `-l` argument to specify path to log file:
 ```bash
 ./rcon -l /path/to/file.log
 ```
 
-You can use `-t` argument to specify the protocol type:
+Use `-t` argument to specify the protocol type:
 ```bash
 # 7 Days to Die
 ./rcon -a 172.19.0.2:8081 -p password -t telnet version
 
 # Rust
 ./rcon -a 127.0.0.1:28016 -p password -t web status
+```
+
+Use `-T` argument to specify dial and execute timeout:
+```bash
+./rcon -a 172.19.0.2:8081 -p password -t telnet -T 10s version
 ```
 
 ## Contribute

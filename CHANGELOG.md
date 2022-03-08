@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+### Added
+- Added `--timeout, -T` flag, allowed to set dial and execute timeout. 
 
 ## [v0.10.1] - 2021-11-13
 ### Fixed
@@ -105,7 +107,7 @@ than entry in configuration file.
 - Initial implementation.
 
 [Unreleased]: https://github.com/gorcon/rcon-cli/compare/v0.10.1...HEAD
-[v0.10.0]: https://github.com/gorcon/rcon-cli/compare/v0.10.0...v0.10.1
+[v0.10.1]: https://github.com/gorcon/rcon-cli/compare/v0.10.0...v0.10.1
 [v0.10.0]: https://github.com/gorcon/rcon-cli/compare/v0.9.1...v0.10.0
 [v0.9.1]: https://github.com/gorcon/rcon-cli/compare/v0.9.0...v0.9.1
 [v0.9.0]: https://github.com/gorcon/rcon-cli/compare/v0.8.1...v0.9.0
