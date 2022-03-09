@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
-- Added `--timeout, -T` flag, allowed to set dial and execute timeout. 
+- Added `--timeout, -T` flag, allowed to set dial and execute timeout.
 
 ## [v0.10.1] - 2021-11-13
 ### Fixed

@@ -1,9 +1,10 @@
 .idea/
 .vscode/
+
 vendor/
-release/
-logs/
+
 *local.yaml
-rcon-cli
-rcon-cli.exe
+gorcon
 *.log
+.tmp/
+.env
