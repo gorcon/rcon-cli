@@ -1,14 +1,6 @@
 include build/docker/.env
 export
 
-## If the first argument is "docker-deploy"...
-#ifeq (docker-run, $(firstword $(MAKECMDGOALS)))
-#  # use the rest as arguments for "run"
-#  RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-#  # ...and turn them into do-nothing targets
-#  $(eval $(RUN_ARGS):;@:)
-#endif
-
 IMAGES := `docker images --filter "dangling=true" -q --no-trunc`
 
 docker-clean:

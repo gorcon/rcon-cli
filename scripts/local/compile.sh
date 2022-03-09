@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 VERSION="$1"
-if [ -z "${VERSION}" ]; then echo "VERSION is not set. Use ./build.sh 0.0.0" >&2; exit 1; fi
+if [ -z "${VERSION}" ]; then echo "VERSION is not set. Use ./compile.sh 0.0.0" >&2; exit 1; fi
 
 RELEASE_DIR=".tmp/release"
 

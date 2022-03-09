@@ -75,6 +75,13 @@ Use `^C` to terminate or type command `:q` to exit.
 docker run -it --rm outdead/rcon ./rcon [options] [commands...]
 ```
 
+You can add your config file as volume:
+```bash
+docker run -it --rm \
+      -v /path/to/rcon-local.yaml:/rcon.yaml \
+      outdead/rcon ./rcon -c rcon.yaml -e default players
+```
+
 ## Configuration file
 For more convenient use, the ability to create the `rcon.yaml` configuration file provided. You can save the host and port of the remote server and its password. If the configuration file exists, and the default block filled in it, then at startup the `-a` and `-p` flags can be omitted. Examples:
 ```bash
