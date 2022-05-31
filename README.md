@@ -16,6 +16,7 @@ CLI for executing queries on a remote [Source dedicated game server](https://dev
 * [7 Days to Die](https://store.steampowered.com/app/251570) (add `-t telnet` to rcon-cli args)
 * [Counter-Strike: Global Offensive](https://store.steampowered.com/app/730)
 * [Minecraft](https://www.minecraft.net)
+* [V Rising](https://store.steampowered.com/app/1604030/V_Rising/)
 
 Open pull request if you have successfully used a package with another game with rcon support and add it to the list.
 
