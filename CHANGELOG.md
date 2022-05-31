@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+## Updated
+- Updated dependencies.
 
 ## [v0.10.2] - 2022-03-09
 ### Added
