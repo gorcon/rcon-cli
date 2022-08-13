@@ -47,5 +47,6 @@ make_release amd64 linux "rcon-${VERSION}-amd64_linux"
 make_release 386 windows "rcon-${VERSION}-win32" .exe
 make_release amd64 windows "rcon-${VERSION}-win64" .exe
 make_release amd64 darwin "rcon-${VERSION}-amd64_darwin"
+make_release arm64 darwin "rcon-${VERSION}-arm64_darwin"
 
 env GOARCH="amd64" GOOS="linux" CGO_ENABLED=0 go build -ldflags "-s -w -X main.Version=${VERSION}" -o gorcon ./cmd/gorcon/main.go
