@@ -17,6 +17,7 @@ CLI for executing queries on a remote [Source dedicated game server](https://dev
 * [Counter-Strike: Global Offensive](https://store.steampowered.com/app/730)
 * [Minecraft](https://www.minecraft.net)
 * [V Rising](https://store.steampowered.com/app/1604030/V_Rising/)
+* [Factorio](https://factorio.com/)
 
 Open pull request if you have successfully used a package with another game with rcon support and add it to the list.
 
