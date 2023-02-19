@@ -9,15 +9,19 @@
 CLI for executing queries on a remote [Source dedicated game server](https://developer.valvesoftware.com/wiki/Source_Dedicated_Server), using the [RCON](https://developer.valvesoftware.com/wiki/Source_RCON_Protocol) protocol.
 
 ## Supported Games
-* [Project Zomboid](https://store.steampowered.com/app/108600) 
-* [Conan Exiles](https://store.steampowered.com/app/440900)
-* [Rust](https://store.steampowered.com/app/252490) (add `+rcon.web 0` to the args when starting the server or add `-t web` to `rcon-cli` args)
-* [ARK: Survival Evolved](https://store.steampowered.com/app/346110)
 * [7 Days to Die](https://store.steampowered.com/app/251570) (add `-t telnet` to rcon-cli args)
+* [ARK: Survival Evolved](https://store.steampowered.com/app/346110)
+* [Conan Exiles](https://store.steampowered.com/app/440900)
 * [Counter-Strike: Global Offensive](https://store.steampowered.com/app/730)
-* [Minecraft](https://www.minecraft.net)
-* [V Rising](https://store.steampowered.com/app/1604030/V_Rising/)
 * [Factorio](https://factorio.com/)
+* [Minecraft](https://www.minecraft.net)
+* [Project Zomboid](https://store.steampowered.com/app/108600) 
+* [Rust](https://store.steampowered.com/app/252490) (add `+rcon.web 0` to the args when starting the server or add `-t web` to `rcon-cli` args)
+* [Team Fortress 2](https://store.steampowered.com/app/440/Team_Fortress_2/)
+* [V Rising](https://store.steampowered.com/app/1604030/V_Rising/)
+
+
+
 
 Open pull request if you have successfully used a package with another game with rcon support and add it to the list.
 
