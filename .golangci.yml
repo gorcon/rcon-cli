@@ -20,7 +20,7 @@ linters-settings:
     skip-tests: true
   dupl:
     # tokens count to trigger issue, 150 by default
-    threshold: 100
+    threshold: 200
   errcheck:
     # report about not checking of errors in type assertions: `a := b.(MyStruct)`;
     # default is false: such cases aren't reported by default.
@@ -66,13 +66,35 @@ linters-settings:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0
   gomnd:
-    settings:
-      mnd:
-        # the list of enabled checks, see https://github.com/tommy-muehle/go-mnd/#checks for description.
-        checks: argument,case,condition,operation,return,assign
+    # List of function patterns to exclude from analysis.
+    # Values always ignored: `time.Date`,
+    # `strconv.FormatInt`, `strconv.FormatUint`, `strconv.FormatFloat`,
+    # `strconv.ParseInt`, `strconv.ParseUint`, `strconv.ParseFloat`.
+    # Default: []
+    ignored-functions:
+      - os.Chmod
+      - os.Mkdir
+      - os.MkdirAll
+      - os.OpenFile
+      - os.WriteFile
+      - io.Reader
+      - io.Writer
+      - \*cli.Context
   govet:
-    # report about shadowed variables.
-    check-shadowing: true
+    # Enable all analyzers.
+    # Default: false
+    enable-all: true
+    # Disable analyzers by name.
+    # Run `go tool vet help` to see all analyzers.
+    # Default: []
+    disable:
+      - fieldalignment # too strict
+    # Settings per analyzer.
+    settings:
+      shadow:
+        # Whether to be strict about shadowing; can be noisy.
+        # Default: false
+        strict: true
   depguard:
     list-type: blacklist
     packages:
@@ -151,13 +173,41 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - maligned # is deprecated (since v1.38.0). Replaced by govet 'fieldalignment'.
-    - golint # is deprecated (since v1.41.0). Replaced by revive.
-    - interfacer # is deprecated (since v1.38.0).
-    - scopelint # is deprecated (since v1.39.0). Replaced by exportloopref.
+    - interfacer # is deprecated (since v1.38.0)
+    - scopelint # is deprecated (since v1.39.0)
+    - golint # is deprecated (since v1.41.0)
+    - maligned # is deprecated (since v1.38.0)
+    - ifshort # is deprecated (since v1.48.0)
+    - deadcode # is deprecated (since v1.49.0)
+    - nosnakecase # is deprecated (since v1.48.1)
+    - varcheck # is deprecated (since v1.49.0)
+    - exhaustivestruct # is deprecated (since v1.46.0)
+    - structcheck # is deprecated (since v1.49.0)
+    - rowserrcheck # is disabled because of generics
+    - sqlclosecheck # is disabled because of generics
+    - structcheck # is disabled because of generics
+    - wastedassign # is disabled because of generics
+    - varnamelen # [great idea, but too many false positives] checks that the length of a variable's name matches its scope
 
 issues:
   exclude:
     - "Version`? is a global variable" # gochecknoglobals
     - "cognitive complexity \\d+ of func `Interactive` is high" # gocognit
     - "are|is missing in" # exhaustivestruct # v1.33
+
+  exclude-rules:
+    - source: "^//\\s*go:generate\\s"
+      linters: [ lll ]
+    - source: "(noinspection|TODO)"
+      linters: [ godot ]
+    - source: "//noinspection"
+      linters: [ gocritic ]
+    - path: "_test\\.go"
+      linters:
+        - bodyclose
+        - dupl
+        - funlen
+        - goconst
+        - gosec
+        - noctx
+        - wrapcheck

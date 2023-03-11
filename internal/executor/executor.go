@@ -277,7 +277,8 @@ func (executor *Executor) getFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:    "type",
 			Aliases: []string{"t"},
-			Usage:   "Specify type of connection (default: " + config.DefaultProtocol + ")",
+			Usage:   "Specify type of connection",
+			Value:   config.DefaultProtocol,
 		},
 		&cli.StringFlag{
 			Name:    "log",
@@ -287,12 +288,14 @@ func (executor *Executor) getFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:    "config",
 			Aliases: []string{"c"},
-			Usage:   "Path to the configuration file (default: " + config.DefaultConfigName + ")",
+			Usage:   "Path to the configuration file",
+			Value:   config.DefaultConfigName,
 		},
 		&cli.StringFlag{
 			Name:    "env",
 			Aliases: []string{"e"},
-			Usage:   "Config environment with server credentials (default: " + config.DefaultConfigEnv + ")",
+			Usage:   "Config environment with server credentials",
+			Value:   config.DefaultConfigEnv,
 		},
 		&cli.BoolFlag{
 			Name:    "skip",
@@ -354,7 +357,7 @@ func (executor *Executor) execute(w io.Writer, ses *config.Session, command stri
 		}
 	}
 
-	if err := logger.Write(ses.Log, ses.Address, command, result); err != nil {
+	if err = logger.Write(ses.Log, ses.Address, command, result); err != nil {
 		fmt.Fprintln(w, fmt.Errorf("log: %w", err))
 	}
 

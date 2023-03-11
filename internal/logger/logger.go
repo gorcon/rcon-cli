@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -17,12 +18,14 @@ const DefaultLineFormat = "[%s] %s: %s\n%s\n\n"
 var ErrEmptyFileName = errors.New("empty file name")
 
 // OpenFile opens file for append strings. Creates file if file not exist.
-func OpenFile(name string) (file *os.File, err error) {
+func OpenFile(name string) (*os.File, error) {
 	if name == "" {
 		return nil, ErrEmptyFileName
 	}
 
-	switch _, err = os.Stat(name); {
+	var file *os.File
+
+	switch _, err := os.Stat(name); {
 	case err == nil:
 		const perm = 0o666
 
@@ -31,6 +34,15 @@ func OpenFile(name string) (file *os.File, err error) {
 			return file, fmt.Errorf("open: %w", err)
 		}
 	case os.IsNotExist(err):
+		dir := filepath.Dir(name)
+		if _, err = os.Stat(dir); os.IsNotExist(err) {
+			const perm = 0o766
+
+			if err = os.MkdirAll(dir, perm); err != nil {
+				return file, fmt.Errorf("create directory: %w", err)
+			}
+		}
+
 		file, err = os.Create(name)
 		if err != nil {
 			return file, fmt.Errorf("create: %w", err)
@@ -54,7 +66,7 @@ func Write(name string, address string, request string, response string) error {
 	defer file.Close()
 
 	line := fmt.Sprintf(DefaultLineFormat, time.Now().Format(DefaultTimeLayout), address, request, response)
-	if _, err := file.WriteString(line); err != nil {
+	if _, err = file.WriteString(line); err != nil {
 		return fmt.Errorf("write: %w", err)
 	}
 

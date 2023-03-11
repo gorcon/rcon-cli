@@ -12,13 +12,13 @@ import (
 var Version = "develop"
 
 func main() {
-	e := executor.NewExecutor(os.Stdin, os.Stdout, Version)
+	exec := executor.NewExecutor(os.Stdin, os.Stdout, Version)
 
-	if err := e.Run(os.Args); err != nil {
+	if err := exec.Run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		e.Close()
+		exec.Close()
 		os.Exit(1)
 	}
 
-	e.Close()
+	exec.Close()
 }

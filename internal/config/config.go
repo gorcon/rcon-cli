@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -35,8 +34,10 @@ var (
 // Example:
 // ```yaml
 // default:
-//   address: "127.0.0.1:16260"
-//   password: "password"
+//
+//	address: "127.0.0.1:16260"
+//	password: "password"
+//
 // ```.
 type Config map[string]Session
 
@@ -67,7 +68,7 @@ func (cfg *Config) ParseFromFile(name string) error {
 	}
 
 	name = home + "/" + DefaultConfigName
-	if err := cfg.parse(name); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err = cfg.parse(name); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 
@@ -94,7 +95,7 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) parse(name string) error {
-	file, err := ioutil.ReadFile(name)
+	file, err := os.ReadFile(name)
 	if err != nil {
 		return fmt.Errorf("read file: %w", err)
 	}
