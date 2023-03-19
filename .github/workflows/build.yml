@@ -43,14 +43,15 @@ jobs:
     - name: Get dependencies
       run: |
         go get -v -t -d ./...
+
     - name: Test
       run: go test -v ./... --cover
 
-    - name: Build
-      run: go build -v ./cmd/gorcon
-
     - name: Update coverage report
       uses: ncruces/go-coverage-report@main
+
+    - name: Build
+      run: go build -v ./cmd/gorcon
 
   docker-release:
     name: Docker Release
