@@ -45,7 +45,7 @@ jobs:
         go get -v -t -d ./...
 
     - name: Test
-      run: go test -v ./... --cover
+      run: go test -v ./...
 
     - name: Update coverage report
       uses: ncruces/go-coverage-report@main
