@@ -20,6 +20,7 @@ CLI for executing queries on a remote [Source dedicated game server](https://dev
 * [Rust](https://store.steampowered.com/app/252490) (add `+rcon.web 0` to the args when starting the server or add `-t web` to `rcon-cli` args)
 * [Team Fortress 2](https://store.steampowered.com/app/440/Team_Fortress_2/)
 * [V Rising](https://store.steampowered.com/app/1604030/V_Rising/)
+* [Palworld](https://store.steampowered.com/app/1623730/Palworld/)
 
 
 
