@@ -188,6 +188,9 @@ linters:
     - structcheck # is disabled because of generics
     - wastedassign # is disabled because of generics
     - varnamelen # [great idea, but too many false positives] checks that the length of a variable's name matches its scope
+    - exhaustruct
+    - depguard
+    - tagalign
 
 issues:
   exclude:
