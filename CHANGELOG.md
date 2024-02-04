@@ -4,15 +4,19 @@ All notable changes to this project will be documented in this file.
 **ATTN**: This project uses [semantic versioning](http://semver.org/).
 
 ## [Unreleased]
+### Updated
+- Updated Go modules (go1.21).
+- Updated golang-ci linter (1.55.2).
+- Updated dependencies.
 
 ## [v0.10.3] - 2023-03-11
-## Added
+### Added
 - Added folder creation for logs.
 
 ### Fixed
 - Fixed default value to config flag.
 
-## Updated
+### Updated
 - Updated Go modules (go1.19).
 - Updated golang-ci linter (1.50.1).
 - Updated dependencies.
