@@ -23,7 +23,6 @@ const CommandQuit = ":q"
 
 // CommandsResponseSeparator is symbols that is written between responses of
 // several commands if more than one command was called.
-// TODO: Add to config.
 const CommandsResponseSeparator = "--------"
 
 // Errors.
