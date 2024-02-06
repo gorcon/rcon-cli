@@ -159,7 +159,7 @@ func (executor *Executor) Execute(w io.Writer, ses *config.Session, commands ...
 	if ses.Type == config.ProtocolWebRCON {
 		defer func() {
 			if executor.client != nil {
-				executor.client.Close()
+				_ = executor.client.Close()
 				executor.client = nil
 			}
 		}()
