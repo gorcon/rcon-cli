@@ -175,7 +175,7 @@ func (executor *Executor) Execute(w io.Writer, ses *config.Session, commands ...
 		}
 
 		if i+1 != len(commands) {
-			fmt.Fprintln(w, CommandsResponseSeparator)
+			_, _ = fmt.Fprintln(w, CommandsResponseSeparator)
 		}
 	}
 
@@ -186,18 +186,18 @@ func (executor *Executor) Execute(w io.Writer, ses *config.Session, commands ...
 // and prints the responses.
 func (executor *Executor) Interactive(r io.Reader, w io.Writer, ses *config.Session) error {
 	if ses.Address == "" {
-		fmt.Fprint(w, "Enter remote host and port [ip:port]: ")
-		fmt.Fscanln(r, &ses.Address)
+		_, _ = fmt.Fprint(w, "Enter remote host and port [ip:port]: ")
+		_, _ = fmt.Fscanln(r, &ses.Address)
 	}
 
 	if ses.Password == "" {
-		fmt.Fprint(w, "Enter password: ")
-		fmt.Fscanln(r, &ses.Password)
+		_, _ = fmt.Fprint(w, "Enter password: ")
+		_, _ = fmt.Fscanln(r, &ses.Password)
 	}
 
 	if ses.Type == "" {
-		fmt.Fprint(w, "Enter protocol type (empty for rcon): ")
-		fmt.Fscanln(r, &ses.Type)
+		_, _ = fmt.Fprint(w, "Enter protocol type (empty for rcon): ")
+		_, _ = fmt.Fscanln(r, &ses.Type)
 	}
 
 	switch ses.Type {
@@ -208,7 +208,7 @@ func (executor *Executor) Interactive(r io.Reader, w io.Writer, ses *config.Sess
 			return err
 		}
 
-		fmt.Fprintf(w, "Waiting commands for %s (or type %s to exit)\n> ", ses.Address, CommandQuit)
+		_, _ = fmt.Fprintf(w, "Waiting commands for %s (or type %s to exit)\n> ", ses.Address, CommandQuit)
 
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
@@ -223,10 +223,10 @@ func (executor *Executor) Interactive(r io.Reader, w io.Writer, ses *config.Sess
 				}
 			}
 
-			fmt.Fprint(w, "> ")
+			_, _ = fmt.Fprint(w, "> ")
 		}
 	default:
-		fmt.Fprintf(w, "Unsupported protocol type (%q). Allowed %q, %q and %q protocols\n",
+		_, _ = fmt.Fprintf(w, "Unsupported protocol type (%q). Allowed %q, %q and %q protocols\n",
 			ses.Type, config.ProtocolRCON, config.ProtocolWebRCON, config.ProtocolTELNET)
 	}
 
@@ -345,19 +345,19 @@ func (executor *Executor) execute(w io.Writer, ses *config.Session, command stri
 	result, err = executor.client.Execute(command)
 	if result != "" {
 		result = strings.TrimSpace(result)
-		fmt.Fprintln(w, result)
+		_, _ = fmt.Fprintln(w, result)
 	}
 
 	if err != nil {
 		if ses.SkipErrors {
-			fmt.Fprintln(w, fmt.Errorf("execute: %w", err))
+			_, _ = fmt.Fprintln(w, fmt.Errorf("execute: %w", err))
 		} else {
 			return fmt.Errorf("execute: %w", err)
 		}
 	}
 
 	if err = logger.Write(ses.Log, ses.Address, command, result); err != nil {
-		fmt.Fprintln(w, fmt.Errorf("log: %w", err))
+		_, _ = fmt.Fprintln(w, fmt.Errorf("log: %w", err))
 	}
 
 	return nil
