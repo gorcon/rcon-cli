@@ -86,6 +86,7 @@ func (executor *Executor) NewSession(c *cli.Context) (*config.Session, error) {
 		Log:        c.String("log"),
 		SkipErrors: c.Bool("skip"),
 		Timeout:    c.Duration("timeout"),
+		Variables:  c.Bool("variables"),
 	}
 
 	if ses.Address != "" && ses.Password != "" {
@@ -307,6 +308,12 @@ func (executor *Executor) getFlags() []cli.Flag {
 			Usage:   "Set dial and execute timeout",
 			Value:   config.DefaultTimeout,
 		},
+		&cli.BoolFlag{
+			Name:    "variables",
+			Aliases: []string{"V"},
+			Usage:   "Print stored variables and exit",
+			Value:   false,
+		},
 	}
 }
 
@@ -315,6 +322,12 @@ func (executor *Executor) action(c *cli.Context) error {
 	ses, err := executor.NewSession(c)
 	if err != nil {
 		return err
+	}
+
+	if ses.Variables {
+		executor.printVariables(ses, c)
+
+		return nil
 	}
 
 	commands := c.Args().Slice()
@@ -361,4 +374,13 @@ func (executor *Executor) execute(w io.Writer, ses *config.Session, command stri
 	}
 
 	return nil
+}
+
+func (executor *Executor) printVariables(ses *config.Session, c *cli.Context) {
+	_, _ = fmt.Fprint(executor.w, "Got Print Variables param.\n")
+	_ = ses.Print(executor.w)
+
+	_, _ = fmt.Fprint(executor.w, "\nPrint other variables:\n")
+	_, _ = fmt.Fprintf(executor.w, "Path to config file (if used): %s\n", c.String("config"))
+	_, _ = fmt.Fprintf(executor.w, "Cofig environment: %s\n", c.String("env"))
 }

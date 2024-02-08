@@ -1,6 +1,11 @@
 package config
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"time"
+)
 
 // Allowed protocols.
 const (
@@ -26,4 +31,17 @@ type Session struct {
 	Type       string        `json:"type" yaml:"type"`
 	SkipErrors bool          `json:"skip_errors" yaml:"skip_errors"`
 	Timeout    time.Duration `json:"timeout" yaml:"timeout"`
+	Variables  bool          `json:"-" yaml:"-"`
+}
+
+func (s *Session) Print(w io.Writer) error {
+	js, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	_, _ = fmt.Fprint(w, "Print session:\n")
+	_, _ = fmt.Fprint(w, string(js)+"\n")
+
+	return nil
 }
