@@ -8,3 +8,4 @@ gorcon
 *.log
 .tmp/
 .env
+.develop/
