@@ -78,6 +78,7 @@ jobs:
           context: .
           file: build/docker/Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64/v8
           build-args: |
             VERSION=0.0.0-develop
           tags: |
