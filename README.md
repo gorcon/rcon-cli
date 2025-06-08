@@ -22,9 +22,6 @@ CLI for executing queries on a remote [Source dedicated game server](https://dev
 * [V Rising](https://store.steampowered.com/app/1604030/V_Rising/)
 * [Palworld](https://store.steampowered.com/app/1623730/Palworld/)
 
-
-
-
 Open pull request if you have successfully used a package with another game with rcon support and add it to the list.
 
 ## Installation
@@ -155,3 +152,6 @@ If you think that you have found a bug, create an issue and indicate your operat
 
 ## License
 MIT License, see [LICENSE](LICENSE)
+
+## Stargazers over time
+[![Stargazers over time](https://starchart.cc/gorcon/rcon-cli.svg?variant=adaptive)](https://starchart.cc/gorcon/rcon-cli)
